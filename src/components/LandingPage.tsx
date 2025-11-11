@@ -21,6 +21,7 @@ import {
   IconTrendingUp,
   IconFileText,
 } from '@tabler/icons-react'
+import { Link } from 'react-router-dom'
 
 interface FeatureCardProps {
   icon: React.ComponentType<{ size?: number | string; style?: React.CSSProperties }>
@@ -348,6 +349,8 @@ function LandingPage() {
               {(styles) => (
                 <Group mt="xl" style={styles}>
                   <Button
+                    component={Link}
+                    to="/register"
                     size="lg"
                     radius={0}
                     variant="filled"
@@ -359,6 +362,7 @@ function LandingPage() {
                       letterSpacing: '1px',
                       padding: '16px 40px',
                       fontSize: '16px',
+                      textDecoration: 'none',
                     }}
                     className="button-smooth"
                     onMouseEnter={(e) => {
@@ -375,6 +379,8 @@ function LandingPage() {
                     Попробовать бесплатно →
                   </Button>
                   <Button
+                    component={Link}
+                    to="/login"
                     size="lg"
                     radius={0}
                     variant="outline"
@@ -385,6 +391,7 @@ function LandingPage() {
                       fontWeight: 400,
                       letterSpacing: '1px',
                       padding: '12px 32px',
+                      textDecoration: 'none',
                     }}
                     className="button-smooth"
                     onMouseEnter={(e) => {
@@ -396,7 +403,7 @@ function LandingPage() {
                       e.currentTarget.style.color = '#000'
                     }}
                   >
-                    Как это работает →
+                    Войти →
                   </Button>
                 </Group>
               )}
@@ -661,6 +668,8 @@ function LandingPage() {
               Присоединяйтесь к тысячам людей, которые уже открыли новые грани себя
             </Text>
             <Button
+              component={Link}
+              to="/register"
               size="lg"
               radius={0}
               variant="filled"
@@ -673,6 +682,7 @@ function LandingPage() {
                 padding: '18px 56px',
                 marginTop: '48px',
                 fontSize: '16px',
+                textDecoration: 'none',
               }}
               className="button-smooth"
               onMouseEnter={(e) => {
