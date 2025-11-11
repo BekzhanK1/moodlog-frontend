@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Box, Loader, Alert, Stack, ScrollArea } from '@mantine/core'
 import { useMediaQuery } from '@mantine/hooks'
 import { IconAlertCircle } from '@tabler/icons-react'
@@ -13,6 +13,7 @@ import { RightSidebar } from '../components/dashboard/RightSidebar'
 
 export function DashboardPage() {
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
   const { logout, isAuthenticated, isLoading: authLoading, user } = useAuth()
   const [entries, setEntries] = useState<EntryResponse[]>([])
   const [loading, setLoading] = useState(true)
@@ -72,6 +73,30 @@ export function DashboardPage() {
     }
   }, [isAuthenticated, authLoading, fetchEntries])
 
+  // Restore selected entry from URL on mount or when entries change
+  useEffect(() => {
+    const entryId = searchParams.get('entry')
+    if (entryId && !selectedEntry && !isNewEntry) {
+      // First, try to find entry in current entries list
+      const entry = entries.find((e) => e.id === entryId)
+      if (entry) {
+        setSelectedEntry(entry)
+        setIsNewEntry(false)
+      } else if (entries.length > 0) {
+        // Entry not in current list, fetch it directly
+        apiClient.getEntryById(entryId)
+          .then((fetchedEntry) => {
+            setSelectedEntry(fetchedEntry)
+            setIsNewEntry(false)
+          })
+          .catch(() => {
+            // Entry not found or error, clear URL param
+            setSearchParams({})
+          })
+      }
+    }
+  }, [entries, searchParams, selectedEntry, isNewEntry, setSearchParams])
+
   const handleLoadMore = useCallback(() => {
     if (!loadingMore && hasMore) {
       fetchEntries(currentPage + 1, true)
@@ -82,11 +107,15 @@ export function DashboardPage() {
     setSelectedEntry(null)
     setIsNewEntry(true)
     setWordCount(0)
+    // Clear entry from URL
+    setSearchParams({})
   }
 
   const handleEntryClick = (entry: EntryResponse) => {
     setSelectedEntry(entry)
     setIsNewEntry(false)
+    // Update URL with entry ID
+    setSearchParams({ entry: entry.id })
   }
 
   const handleWordCountChange = (count: number) => {

@@ -180,6 +180,10 @@ class ApiClient {
       body: JSON.stringify(entryData),
     })
   }
+
+  async getEntryById(id: string): Promise<EntryResponse> {
+    return this.request<EntryResponse>(`/entries/${id}`)
+  }
 }
 
 export const apiClient = new ApiClient(API_BASE_URL)
