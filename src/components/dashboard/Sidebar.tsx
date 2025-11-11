@@ -1,0 +1,465 @@
+import { useState, useRef, useEffect } from 'react'
+import {
+  Box,
+  Stack,
+  Button,
+  TextInput,
+  Text,
+  Card,
+  Group,
+  Badge,
+  ScrollArea,
+  Drawer,
+  ActionIcon,
+} from '@mantine/core'
+import { useMediaQuery } from '@mantine/hooks'
+import {
+  IconPlus,
+  IconChartLine,
+  IconSearch,
+  IconChevronLeft,
+  IconChevronRight,
+  IconHash,
+  IconX,
+} from '@tabler/icons-react'
+import { EntryResponse } from '../../utils/api'
+
+interface SidebarProps {
+  entries: EntryResponse[]
+  isLoading: boolean
+  hasMore: boolean
+  onLoadMore: () => void
+  onNewEntry: () => void
+  onEntryClick: (entry: EntryResponse) => void
+  opened?: boolean
+  onClose?: () => void
+  selectedEntryId?: string | null
+}
+
+export function Sidebar({
+  entries,
+  isLoading,
+  hasMore,
+  onLoadMore,
+  onNewEntry,
+  onEntryClick,
+  opened,
+  onClose,
+  selectedEntryId,
+}: SidebarProps) {
+  const isMobile = useMediaQuery('(max-width: 768px)')
+  const [isCollapsed, setIsCollapsed] = useState(false)
+  const [isSearchFocused, setIsSearchFocused] = useState(false)
+  const scrollAreaRef = useRef<HTMLDivElement>(null)
+  const observerRef = useRef<IntersectionObserver | null>(null)
+  const loadMoreRef = useRef<HTMLDivElement>(null)
+
+  // On mobile, close sidebar when entry is clicked
+  const handleEntryClick = (entry: EntryResponse) => {
+    onEntryClick(entry)
+    if (isMobile && onClose) {
+      onClose()
+    }
+  }
+
+  const handleNewEntry = () => {
+    onNewEntry()
+    if (isMobile && onClose) {
+      onClose()
+    }
+  }
+
+  // Infinite scroll observer
+  useEffect(() => {
+    if (observerRef.current) {
+      observerRef.current.disconnect()
+    }
+
+    observerRef.current = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !isLoading) {
+          onLoadMore()
+        }
+      },
+      { threshold: 0.1 }
+    )
+
+    if (loadMoreRef.current) {
+      observerRef.current.observe(loadMoreRef.current)
+    }
+
+    return () => {
+      if (observerRef.current) {
+        observerRef.current.disconnect()
+      }
+    }
+  }, [hasMore, isLoading, onLoadMore])
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString)
+    return date.toLocaleDateString('ru-RU', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    })
+  }
+
+  const truncateContent = (content: string, maxLength: number = 50) => {
+    if (content.length <= maxLength) return content
+    return content.substring(0, maxLength).trim() + '...'
+  }
+
+  const getMoodEmoji = (rating: number | null): string => {
+    if (rating === null) return '😐'
+    
+    // Range: -2.0 to +2.0
+    // Division:
+    // -2.0 to -1.0: 😢 (very negative/sad)
+    // -1.0 to -0.3: 😕 (negative/unhappy)
+    // -0.3 to 0.3: 😐 (neutral)
+    // 0.3 to 1.0: 🙂 (positive/happy)
+    // 1.0 to 2.0: 😄 (very positive/very happy)
+    
+    if (rating <= -1.0) return '😢'
+    if (rating <= -0.3) return '😕'
+    if (rating <= 0.3) return '😐'
+    if (rating <= 1.0) return '🙂'
+    return '😄'
+  }
+
+  const getMoodColor = (rating: number | null) => {
+    if (rating === null) return '#999'
+    if (rating >= 1.0) return '#22c55e' // green - very positive
+    if (rating >= 0.3) return '#84cc16' // yellow-green - positive
+    if (rating >= -0.3) return '#999' // gray - neutral
+    if (rating >= -1.0) return '#f59e0b' // orange - negative
+    return '#ef4444' // red - very negative
+  }
+
+  const sidebarContent = (
+    <>
+      {/* Buttons */}
+      <Box style={{ padding: isMobile ? '16px' : '16px', borderBottom: '1px solid var(--theme-border)' }}>
+        <Stack gap="sm">
+          <Button
+            fullWidth
+            leftSection={<IconPlus size={isMobile ? 20 : 18} />}
+            radius="md"
+            size={isMobile ? 'md' : 'sm'}
+            onClick={handleNewEntry}
+            style={{
+              backgroundColor: 'var(--theme-primary)',
+              color: 'var(--theme-bg)',
+              fontWeight: 400,
+              border: '1px solid var(--theme-primary)',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = 'var(--theme-bg)'
+              e.currentTarget.style.color = 'var(--theme-primary)'
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'var(--theme-primary)'
+              e.currentTarget.style.color = 'var(--theme-bg)'
+            }}
+          >
+            Новая запись
+          </Button>
+
+          <Button
+            fullWidth
+            leftSection={<IconChartLine size={isMobile ? 20 : 18} />}
+            variant="outline"
+            radius="md"
+            size={isMobile ? 'md' : 'sm'}
+            style={{
+              borderColor: 'var(--theme-border)',
+              color: 'var(--theme-text)',
+              backgroundColor: 'var(--theme-bg)',
+              fontWeight: 400,
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = 'var(--theme-primary)'
+              e.currentTarget.style.backgroundColor = 'var(--theme-hover)'
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = 'var(--theme-border)'
+              e.currentTarget.style.backgroundColor = 'var(--theme-bg)'
+            }}
+          >
+            Аналитика
+          </Button>
+
+          <TextInput
+            placeholder="Поиск"
+            leftSection={
+              <IconSearch 
+                size={isMobile ? 18 : 16} 
+                style={{ color: 'var(--theme-text-secondary)' }} 
+              />
+            }
+            radius="md"
+            size={isMobile ? 'md' : 'sm'}
+            onFocus={() => setIsSearchFocused(true)}
+            onBlur={() => setIsSearchFocused(false)}
+            styles={{
+              input: {
+                borderColor: isSearchFocused ? 'var(--theme-primary)' : 'var(--theme-border)',
+                backgroundColor: 'var(--theme-bg)',
+                color: 'var(--theme-text)',
+                transition: 'border-color 0.3s ease',
+              },
+              section: {
+                color: 'var(--theme-text-secondary)',
+              },
+            }}
+          />
+        </Stack>
+      </Box>
+
+      {/* Entries list */}
+      <ScrollArea
+        style={{ flex: 1 }}
+        viewportRef={scrollAreaRef}
+      >
+        <Box style={{ padding: isMobile ? '12px' : '16px' }}>
+          <Stack gap={isMobile ? 'sm' : 'md'}>
+            {entries.map((entry) => {
+              const isSelected = selectedEntryId === entry.id
+              return (
+                <Card
+                  key={entry.id}
+                  padding={isMobile ? 'sm' : 'md'}
+                  radius="md"
+                  style={{
+                    border: isSelected ? '1px solid var(--theme-primary)' : '1px solid var(--theme-border)',
+                    borderLeft: isSelected ? '4px solid var(--theme-primary)' : '1px solid var(--theme-border)',
+                    backgroundColor: isSelected ? 'var(--theme-hover)' : 'var(--theme-bg)',
+                    cursor: 'pointer',
+                    transition: 'all 0.3s ease',
+                    position: 'relative',
+                  }}
+                  onClick={() => handleEntryClick(entry)}
+                  onMouseEnter={(e) => {
+                    if (!isSelected) {
+                      e.currentTarget.style.borderColor = 'var(--theme-primary)'
+                      e.currentTarget.style.backgroundColor = 'var(--theme-hover)'
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isSelected) {
+                      e.currentTarget.style.borderColor = 'var(--theme-border)'
+                      e.currentTarget.style.backgroundColor = 'var(--theme-bg)'
+                    }
+                  }}
+                >
+                <Stack gap="xs">
+                  {/* Date */}
+                  <Text
+                    size="xs"
+                    style={{
+                      color: 'var(--theme-text-secondary)',
+                      fontWeight: 400,
+                    }}
+                  >
+                    {formatDate(entry.created_at)}
+                  </Text>
+
+                  {/* Title or content preview */}
+                  {entry.title ? (
+                    <Text
+                      size={isMobile ? 'xs' : 'sm'}
+                      style={{
+                        color: 'var(--theme-text)',
+                        fontWeight: 500,
+                        marginBottom: '4px',
+                      }}
+                    >
+                      {entry.title}
+                    </Text>
+                  ) : null}
+
+                  <Text
+                    size={isMobile ? 'xs' : 'sm'}
+                    style={{
+                      color: 'var(--theme-text-secondary)',
+                      fontWeight: 400,
+                      lineHeight: 1.5,
+                    }}
+                  >
+                    {truncateContent(entry.content, isMobile ? 40 : 50)}
+                  </Text>
+
+                  {/* Tags and mood rating */}
+                  <Group gap="xs" justify="space-between" align="flex-end">
+                    <Group gap="xs" style={{ flexWrap: 'wrap', flex: 1 }}>
+                      {entry.tags && entry.tags.length > 0 ? (
+                        entry.tags.slice(0, isMobile ? 2 : 3).map((tag, idx) => (
+                          <Badge
+                            key={idx}
+                            variant="light"
+                            radius="sm"
+                            leftSection={<IconHash size={8} />}
+                            style={{
+                              backgroundColor: 'var(--theme-hover)',
+                              color: 'var(--theme-text-secondary)',
+                              border: 'none',
+                              fontWeight: 400,
+                              fontSize: isMobile ? '8px' : '9px',
+                              padding: '1px 4px',
+                              lineHeight: 1.2,
+                            }}
+                          >
+                            {tag}
+                          </Badge>
+                        ))
+                      ) : null}
+                    </Group>
+
+                    {entry.mood_rating !== null && (
+                      <Group gap={4} align="center">
+                        <Text
+                          style={{
+                            fontSize: isMobile ? '14px' : '16px',
+                            lineHeight: 1,
+                          }}
+                        >
+                          {getMoodEmoji(entry.mood_rating)}
+                        </Text>
+                        <Text
+                          size="xs"
+                          style={{
+                            color: getMoodColor(entry.mood_rating),
+                            fontWeight: 500,
+                            fontFamily: 'monospace',
+                          }}
+                        >
+                          {entry.mood_rating.toFixed(1)}
+                        </Text>
+                      </Group>
+                    )}
+                  </Group>
+                </Stack>
+              </Card>
+              )
+            })}
+
+            {/* Load more trigger */}
+            {hasMore && (
+              <Box ref={loadMoreRef} style={{ height: '20px' }} />
+            )}
+
+            {isLoading && (
+              <Box style={{ textAlign: 'center', padding: '16px' }}>
+                <Text size="sm" style={{ color: 'var(--theme-text-secondary)' }}>
+                  Загрузка...
+                </Text>
+              </Box>
+            )}
+          </Stack>
+        </Box>
+      </ScrollArea>
+    </>
+  )
+
+  // Mobile: Use Drawer
+  if (isMobile) {
+    return (
+      <Drawer
+        opened={opened || false}
+        onClose={onClose || (() => {})}
+        title={
+          <Group justify="space-between" style={{ width: '100%' }}>
+            <Text style={{ fontWeight: 500, color: 'var(--theme-text)' }}>Записи</Text>
+            {onClose && (
+              <ActionIcon
+                variant="subtle"
+                onClick={onClose}
+                radius="md"
+              >
+                <IconX size={18} />
+              </ActionIcon>
+            )}
+          </Group>
+        }
+        padding="md"
+        size="85%"
+        styles={{
+          content: {
+            display: 'flex',
+            flexDirection: 'column',
+            backgroundColor: 'var(--theme-bg)',
+          },
+          body: {
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden',
+            backgroundColor: 'var(--theme-bg)',
+          },
+          header: {
+            backgroundColor: 'var(--theme-bg)',
+            borderBottom: '1px solid var(--theme-border)',
+          },
+          title: {
+            color: 'var(--theme-text)',
+          },
+        }}
+      >
+        <Box style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+          {sidebarContent}
+        </Box>
+      </Drawer>
+    )
+  }
+
+  // Desktop: Regular sidebar
+  return (
+    <Box
+      style={{
+        width: isCollapsed ? '64px' : '320px',
+        height: 'calc(100vh - 64px)',
+        borderRight: '1px solid var(--theme-border)',
+        backgroundColor: 'var(--theme-bg)',
+        display: 'flex',
+        flexDirection: 'column',
+        transition: 'width 0.3s ease',
+        position: 'relative',
+      }}
+    >
+      {/* Collapse button */}
+      <Box
+        style={{
+          position: 'absolute',
+          top: '16px',
+          right: '-12px',
+          zIndex: 10,
+          cursor: 'pointer',
+        }}
+        onClick={() => setIsCollapsed(!isCollapsed)}
+      >
+        <Box
+          style={{
+            width: '24px',
+            height: '24px',
+            borderRadius: '50%',
+          backgroundColor: 'var(--theme-bg)',
+          border: '1px solid var(--theme-border)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+          }}
+        >
+          {isCollapsed ? (
+            <IconChevronRight size={14} style={{ color: 'var(--theme-text-secondary)' }} />
+          ) : (
+            <IconChevronLeft size={14} style={{ color: 'var(--theme-text-secondary)' }} />
+          )}
+        </Box>
+      </Box>
+
+      {!isCollapsed && sidebarContent}
+    </Box>
+  )
+}
+

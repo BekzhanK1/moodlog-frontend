@@ -16,9 +16,12 @@ import { AuthLayout } from '../components/auth/AuthLayout'
 import { GoogleButton } from '../components/auth/GoogleButton'
 import { loginSchema } from '../utils/validation'
 import { zodResolver } from '../utils/zodResolver'
+import { useAuth } from '../contexts/AuthContext'
+import { API_BASE_URL } from '../utils/api'
 
 export function LoginPage() {
   const navigate = useNavigate()
+  const { login } = useAuth()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -30,18 +33,12 @@ export function LoginPage() {
     validate: zodResolver(loginSchema),
   })
 
-  const handleSubmit = async (_values: typeof form.values) => {
+  const handleSubmit = async (values: typeof form.values) => {
     setError(null)
     setLoading(true)
 
     try {
-      // TODO: Replace with actual API call
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-      
-      // Simulate API error for demo
-      // throw new Error('Неверный email или пароль')
-      
-      // On success, redirect to dashboard
+      await login(values.email, values.password)
       navigate('/dashboard')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Произошла ошибка при входе')
@@ -50,20 +47,10 @@ export function LoginPage() {
     }
   }
 
-  const handleGoogleLogin = async () => {
+  const handleGoogleLogin = () => {
     setError(null)
-    setLoading(true)
-
-    try {
-      // TODO: Implement Google OAuth
-      // window.location.href = '/api/auth/google'
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-      navigate('/dashboard')
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Ошибка при входе через Google')
-    } finally {
-      setLoading(false)
-    }
+    // Redirect to backend Google OAuth endpoint
+    window.location.href = `${API_BASE_URL}/auth/google/login`
   }
 
   return (
