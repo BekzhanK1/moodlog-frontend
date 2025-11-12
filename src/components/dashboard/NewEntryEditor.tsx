@@ -1,7 +1,8 @@
-import { useState, forwardRef, useImperativeHandle } from 'react'
+import { useState, forwardRef, useImperativeHandle, useEffect, useRef } from 'react'
 import * as React from 'react'
 import { Box, TextInput, Textarea, Stack, Button, Group, Divider, Text } from '@mantine/core'
 import { useMediaQuery } from '@mantine/hooks'
+import { IconCheck, IconLoader } from '@tabler/icons-react'
 
 export interface NewEntryEditorHandle {
   getTitle: () => string
@@ -13,26 +14,37 @@ export interface NewEntryEditorHandle {
 interface NewEntryEditorProps {
   onContentChange?: (wordCount: number) => void
   onSave?: () => void
+  onAutoSave?: (title: string, content: string) => Promise<string | null> // Returns draft entry ID
   isSaving?: boolean
   wordCount?: number
   initialTitle?: string
   initialContent?: string
   buttonText?: string
+  draftEntryId?: string | null
+  isEditing?: boolean // Whether we're editing an existing entry (not creating new)
 }
 
 export const NewEntryEditor = forwardRef<NewEntryEditorHandle, NewEntryEditorProps>(
   function NewEntryEditor({ 
     onContentChange, 
     onSave, 
+    onAutoSave,
     isSaving = false, 
     wordCount = 0,
     initialTitle = '',
     initialContent = '',
     buttonText = 'Сохранить',
+    draftEntryId: externalDraftEntryId = null,
+    isEditing = false,
   }, ref) {
     const isMobile = useMediaQuery('(max-width: 768px)')
     const [title, setTitle] = useState(initialTitle)
     const [content, setContent] = useState(initialContent)
+    const [isAutoSaving, setIsAutoSaving] = useState(false)
+    const [lastSaved, setLastSaved] = useState<Date | null>(null)
+    const [draftEntryId, setDraftEntryId] = useState<string | null>(externalDraftEntryId)
+    const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+    const lastSavedRef = useRef<string>('') // Track last saved content to avoid unnecessary saves
 
     // Update state when initial values change
     React.useEffect(() => {
@@ -40,18 +52,74 @@ export const NewEntryEditor = forwardRef<NewEntryEditorHandle, NewEntryEditorPro
       setContent(initialContent)
     }, [initialTitle, initialContent])
 
+    // Update draftEntryId when external prop changes
+    useEffect(() => {
+      setDraftEntryId(externalDraftEntryId)
+    }, [externalDraftEntryId])
+
     useImperativeHandle(ref, () => ({
       getTitle: () => title,
       getContent: () => content,
       reset: () => {
         setTitle('')
         setContent('')
+        setDraftEntryId(null)
+        setLastSaved(null)
+        lastSavedRef.current = ''
       },
       setInitialValues: (newTitle: string, newContent: string) => {
         setTitle(newTitle)
         setContent(newContent)
       },
     }))
+
+    // Auto-save logic with debounce (only for new entries, not editing)
+    useEffect(() => {
+      // Don't auto-save when editing existing entries
+      if (isEditing) {
+        return
+      }
+
+      // Clear existing timeout
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current)
+      }
+
+      // Don't auto-save if content is empty or hasn't changed
+      const currentContent = `${title}|${content}`
+      if (!content.trim() || currentContent === lastSavedRef.current) {
+        return
+      }
+
+      // Set up auto-save after 3 seconds of inactivity
+      autoSaveTimeoutRef.current = setTimeout(async () => {
+        if (onAutoSave && content.trim()) {
+          setIsAutoSaving(true)
+          try {
+            const savedDraftId = await onAutoSave(title.trim() || null, content.trim())
+            if (savedDraftId) {
+              setDraftEntryId(savedDraftId)
+              setLastSaved(new Date())
+              lastSavedRef.current = `${title}|${content}`
+            }
+          } catch (error) {
+            console.error('Auto-save failed:', error)
+          } finally {
+            setIsAutoSaving(false)
+          }
+        }
+      }, 3000) // 3 seconds debounce
+
+      return () => {
+        if (autoSaveTimeoutRef.current) {
+          clearTimeout(autoSaveTimeoutRef.current)
+        }
+      }
+    }, [title, content, onAutoSave, isEditing])
+
+    const handleTitleChange = (value: string) => {
+      setTitle(value)
+    }
 
     const handleContentChange = (value: string) => {
       setContent(value)
@@ -66,14 +134,36 @@ export const NewEntryEditor = forwardRef<NewEntryEditorHandle, NewEntryEditorPro
           maxWidth: '800px',
           margin: '0 auto',
           backgroundColor: 'var(--theme-bg)',
+          position: 'relative',
         }}
       >
         <Stack gap="lg">
+          {/* Auto-save indicator */}
+          {(isAutoSaving || lastSaved) && (
+            <Group justify="flex-end" gap="xs" style={{ marginTop: '-16px', marginBottom: '-8px' }}>
+              {isAutoSaving ? (
+                <Group gap={4}>
+                  <IconLoader size={14} style={{ color: 'var(--theme-text-secondary)', animation: 'spin 1s linear infinite' }} />
+                  <Text size="xs" style={{ color: 'var(--theme-text-secondary)' }}>
+                    Сохранение...
+                  </Text>
+                </Group>
+              ) : lastSaved ? (
+                <Group gap={4}>
+                  <IconCheck size={14} style={{ color: 'var(--theme-primary)' }} />
+                  <Text size="xs" style={{ color: 'var(--theme-text-secondary)' }}>
+                    Сохранено {lastSaved.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
+                  </Text>
+                </Group>
+              ) : null}
+            </Group>
+          )}
+
           {/* Title input */}
           <TextInput
             placeholder="Заголовок (необязательно)"
             value={title}
-            onChange={(e) => setTitle(e.target.value)}
+            onChange={(e) => handleTitleChange(e.target.value)}
             variant="unstyled"
             size={isMobile ? 'md' : 'lg'}
             styles={{

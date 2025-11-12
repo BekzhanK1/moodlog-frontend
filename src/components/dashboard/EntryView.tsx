@@ -1,18 +1,47 @@
-import { Box, Text, Stack, Group, Badge, Divider, Button } from '@mantine/core'
+import { Box, Text, Stack, Group, Badge, Divider, Button, Modal, TextInput } from '@mantine/core'
 import { useMediaQuery } from '@mantine/hooks'
-import { IconHash, IconPencil } from '@tabler/icons-react'
+import { IconHash, IconPencil, IconTrash } from '@tabler/icons-react'
 import { EntryResponse } from '../../utils/api'
 import { highlightText, shouldHighlightTag } from '../../utils/highlight'
+import { useState } from 'react'
 
 interface EntryViewProps {
   entry: EntryResponse
   onEdit?: () => void
+  onDelete?: () => void
   onTagClick?: (tag: string) => void
   searchQuery?: string
 }
 
-export function EntryView({ entry, onEdit, onTagClick, searchQuery }: EntryViewProps) {
+export function EntryView({ entry, onEdit, onDelete, onTagClick, searchQuery }: EntryViewProps) {
   const isMobile = useMediaQuery('(max-width: 768px)')
+  const [deleteModalOpened, setDeleteModalOpened] = useState(false)
+  const [deleteConfirmText, setDeleteConfirmText] = useState('')
+  const [isDeleting, setIsDeleting] = useState(false)
+
+  const handleDeleteClick = () => {
+    setDeleteModalOpened(true)
+    setDeleteConfirmText('')
+  }
+
+  const handleDeleteConfirm = async () => {
+    if (deleteConfirmText.trim().toUpperCase() === 'УДАЛИТЬ') {
+      setIsDeleting(true)
+      try {
+        if (onDelete) {
+          await onDelete()
+        }
+        setDeleteModalOpened(false)
+        setDeleteConfirmText('')
+      } catch (error) {
+        console.error('Failed to delete entry:', error)
+      } finally {
+        setIsDeleting(false)
+      }
+    }
+  }
+
+  const canDelete = deleteConfirmText.trim().toUpperCase() === 'УДАЛИТЬ'
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
@@ -86,29 +115,53 @@ export function EntryView({ entry, onEdit, onTagClick, searchQuery }: EntryViewP
             </Text>
           </Stack>
 
-          {/* Edit button */}
-          {onEdit && (
-            <Button
-              leftSection={<IconPencil size={16} />}
-              variant="subtle"
-              size={isMobile ? 'sm' : 'md'}
-              onClick={onEdit}
-              radius="md"
-              style={{
-                color: 'var(--theme-text)',
-                backgroundColor: 'transparent',
-                border: '1px solid var(--theme-border)',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = 'var(--theme-hover)'
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'transparent'
-              }}
-            >
-              Редактировать
-            </Button>
-          )}
+          {/* Edit and Delete buttons */}
+          <Group gap="xs">
+            {onEdit && (
+              <Button
+                leftSection={<IconPencil size={16} />}
+                variant="subtle"
+                size={isMobile ? 'sm' : 'md'}
+                onClick={onEdit}
+                radius="md"
+                style={{
+                  color: 'var(--theme-text)',
+                  backgroundColor: 'transparent',
+                  border: '1px solid var(--theme-border)',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = 'var(--theme-hover)'
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent'
+                }}
+              >
+                Редактировать
+              </Button>
+            )}
+            {onDelete && (
+              <Button
+                leftSection={<IconTrash size={16} />}
+                variant="subtle"
+                size={isMobile ? 'sm' : 'md'}
+                onClick={handleDeleteClick}
+                radius="md"
+                style={{
+                  color: '#ef4444',
+                  backgroundColor: 'transparent',
+                  border: '1px solid #ef4444',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.1)'
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent'
+                }}
+              >
+                Удалить
+              </Button>
+            )}
+          </Group>
         </Group>
 
         {/* Content */}
@@ -263,6 +316,78 @@ export function EntryView({ entry, onEdit, onTagClick, searchQuery }: EntryViewP
           </>
         )}
       </Stack>
+
+      {/* Delete confirmation modal */}
+      <Modal
+        opened={deleteModalOpened}
+        onClose={() => {
+          setDeleteModalOpened(false)
+          setDeleteConfirmText('')
+        }}
+        title="Подтверждение удаления"
+        centered
+        styles={{
+          content: {
+            backgroundColor: 'var(--theme-bg)',
+          },
+          header: {
+            backgroundColor: 'var(--theme-bg)',
+            borderBottom: '1px solid var(--theme-border)',
+          },
+          title: {
+            color: 'var(--theme-text)',
+            fontWeight: 600,
+          },
+        }}
+      >
+        <Stack gap="md">
+          <Text style={{ color: 'var(--theme-text)' }}>
+            Вы уверены, что хотите удалить эту запись? Это действие нельзя отменить.
+          </Text>
+          <Text size="sm" style={{ color: 'var(--theme-text-secondary)' }}>
+            Для подтверждения введите <strong>УДАЛИТЬ</strong> в поле ниже:
+          </Text>
+          <TextInput
+            value={deleteConfirmText}
+            onChange={(e) => setDeleteConfirmText(e.currentTarget.value)}
+            placeholder="УДАЛИТЬ"
+            styles={{
+              input: {
+                backgroundColor: 'var(--theme-bg)',
+                borderColor: 'var(--theme-border)',
+                color: 'var(--theme-text)',
+              },
+            }}
+          />
+          <Group justify="flex-end" gap="xs">
+            <Button
+              variant="subtle"
+              onClick={() => {
+                setDeleteModalOpened(false)
+                setDeleteConfirmText('')
+              }}
+              style={{
+                color: 'var(--theme-text)',
+                border: '1px solid var(--theme-border)',
+              }}
+            >
+              Отмена
+            </Button>
+            <Button
+              color="red"
+              onClick={handleDeleteConfirm}
+              disabled={!canDelete}
+              loading={isDeleting}
+              style={{
+                backgroundColor: canDelete ? '#ef4444' : 'var(--theme-border)',
+                color: canDelete ? 'white' : 'var(--theme-text-secondary)',
+              }}
+            >
+              Удалить
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
     </Box>
   )
 }

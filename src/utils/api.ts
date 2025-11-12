@@ -86,6 +86,11 @@ class ApiClient {
         headers,
       })
 
+      // Handle 204 No Content (no response body)
+      if (response.status === 204) {
+        return undefined as T
+      }
+
       if (!response.ok) {
         // Handle 401 Unauthorized - token expired
         if (response.status === 401) {
@@ -102,6 +107,11 @@ class ApiClient {
                 ...options,
                 headers,
               })
+              
+              // Handle 204 No Content for retry
+              if (retryResponse.status === 204) {
+                return undefined as T
+              }
               
               if (!retryResponse.ok) {
                 const error: ApiError = await retryResponse.json().catch(() => ({
@@ -201,6 +211,77 @@ class ApiClient {
 
   async searchEntries(query: string, page: number = 1, perPage: number = 10): Promise<EntryListResponse> {
     return this.request<EntryListResponse>(`/entries/search?q=${encodeURIComponent(query)}&page=${page}&per_page=${perPage}`)
+  }
+
+  async deleteEntry(id: string): Promise<void> {
+    return this.request<void>(`/entries/${id}`, {
+      method: 'DELETE',
+    })
+  }
+
+  // Analytics endpoints
+  async getMoodTrend(startDate?: string, endDate?: string, timezoneOffset?: number): Promise<Array<{ date: string; mood_rating: number; num_entries: number }>> {
+    const params = new URLSearchParams()
+    if (startDate) params.append('start_date', startDate)
+    if (endDate) params.append('end_date', endDate)
+    if (timezoneOffset !== undefined) params.append('timezone_offset', timezoneOffset.toString())
+    return this.request<Array<{ date: string; mood_rating: number; num_entries: number }>>(`/analytics/mood-trend?${params.toString()}`)
+  }
+
+  async getMainThemes(startDate?: string, endDate?: string): Promise<Array<{ tag: string; frequency: number; relative_percentage: number }>> {
+    const params = new URLSearchParams()
+    if (startDate) params.append('start_date', startDate)
+    if (endDate) params.append('end_date', endDate)
+    return this.request<Array<{ tag: string; frequency: number; relative_percentage: number }>>(`/analytics/main-themes?${params.toString()}`)
+  }
+
+  async getBestAndWorstDay(startDate?: string, endDate?: string): Promise<{
+    best_entry: { id: string; mood_rating: number; created_at: string; tags: string[] | null };
+    worst_entry: { id: string; mood_rating: number; created_at: string; tags: string[] | null };
+  }> {
+    const params = new URLSearchParams()
+    if (startDate) params.append('start_date', startDate)
+    if (endDate) params.append('end_date', endDate)
+    return this.request<{
+      best_entry: { id: string; mood_rating: number; created_at: string; tags: string[] | null };
+      worst_entry: { id: string; mood_rating: number; created_at: string; tags: string[] | null };
+    }>(`/analytics/best-and-worst-day?${params.toString()}`)
+  }
+
+  async compareCurrentAndPreviousMonth(): Promise<{
+    current_mood_rating: number | null;
+    previous_mood_rating: number | null;
+    mood_rating_difference: number | null;
+  }> {
+    return this.request<{
+      current_mood_rating: number | null;
+      previous_mood_rating: number | null;
+      mood_rating_difference: number | null;
+    }>('/analytics/compare-current-and-previous-month-mood-rating')
+  }
+
+  // Insights endpoints
+  async getMonthlyInsights(year?: number, month?: number): Promise<{ id: string; content: string; type: string; period_key: string; created_at: string } | null> {
+    const params = new URLSearchParams()
+    if (year) params.append('year', year.toString())
+    if (month) params.append('month', month.toString())
+    try {
+      return await this.request<{ id: string; content: string; type: string; period_key: string; created_at: string }>(`/insights/monthly?${params.toString()}`)
+    } catch (error: any) {
+      if (error?.message?.includes('404')) {
+        return null
+      }
+      throw error
+    }
+  }
+
+  async generateMonthlyInsights(year?: number, month?: number): Promise<{ id: string; content: string; type: string; period_key: string; created_at: string }> {
+    const params = new URLSearchParams()
+    if (year) params.append('year', year.toString())
+    if (month) params.append('month', month.toString())
+    return this.request<{ id: string; content: string; type: string; period_key: string; created_at: string }>(`/insights/monthly?${params.toString()}`, {
+      method: 'POST',
+    })
   }
 }
 

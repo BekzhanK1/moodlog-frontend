@@ -22,6 +22,7 @@ import {
   IconHash,
   IconX,
 } from '@tabler/icons-react'
+import { useNavigate } from 'react-router-dom'
 import { EntryResponse } from '../../utils/api'
 import { highlightText, shouldHighlightTag } from '../../utils/highlight'
 
@@ -37,6 +38,7 @@ interface SidebarProps {
   opened?: boolean
   onClose?: () => void
   selectedEntryId?: string | null
+  deletingEntryId?: string | null
 }
 
 export function Sidebar({
@@ -51,8 +53,10 @@ export function Sidebar({
   opened,
   onClose,
   selectedEntryId,
+  deletingEntryId,
 }: SidebarProps) {
   const isMobile = useMediaQuery('(max-width: 768px)')
+  const navigate = useNavigate()
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [isSearchFocused, setIsSearchFocused] = useState(false)
   const [searchValue, setSearchValue] = useState(searchQuery)
@@ -183,6 +187,12 @@ export function Sidebar({
             variant="outline"
             radius="md"
             size={isMobile ? 'md' : 'sm'}
+            onClick={() => {
+              navigate('/analytics')
+              if (isMobile && onClose) {
+                onClose()
+              }
+            }}
             style={{
               borderColor: 'var(--theme-border)',
               color: 'var(--theme-text)',
@@ -278,44 +288,90 @@ export function Sidebar({
           <Stack gap={isMobile ? 'sm' : 'md'}>
             {entries.map((entry) => {
               const isSelected = selectedEntryId === entry.id
+              const isDeleting = deletingEntryId === entry.id
+              const isDraft = entry.is_draft || false
               return (
                 <Card
                   key={entry.id}
                   padding={isMobile ? 'sm' : 'md'}
                   radius="md"
                   style={{
-                    border: isSelected ? '1px solid var(--theme-primary)' : '1px solid var(--theme-border)',
-                    borderLeft: isSelected ? '4px solid var(--theme-primary)' : '1px solid var(--theme-border)',
-                    backgroundColor: isSelected ? 'var(--theme-hover)' : 'var(--theme-bg)',
-                    cursor: 'pointer',
-                    transition: 'all 0.3s ease',
+                    border: isSelected 
+                      ? '1px solid var(--theme-primary)' 
+                      : isDraft 
+                        ? '1px dashed var(--theme-border)' 
+                        : '1px solid var(--theme-border)',
+                    borderLeft: isSelected 
+                      ? '4px solid var(--theme-primary)' 
+                      : isDraft 
+                        ? '4px dashed var(--theme-text-secondary)' 
+                        : '1px solid var(--theme-border)',
+                    backgroundColor: isSelected 
+                      ? 'var(--theme-hover)' 
+                      : isDraft 
+                        ? 'var(--theme-hover)' 
+                        : 'var(--theme-bg)',
+                    opacity: isDraft && !isSelected ? 0.85 : (isDeleting ? 0 : 1),
+                    cursor: isDeleting ? 'default' : 'pointer',
+                    transition: isDeleting ? 'opacity 0.5s ease, transform 0.5s ease, max-height 0.5s ease, margin 0.5s ease, padding 0.5s ease' : 'all 0.3s ease',
                     position: 'relative',
+                    transform: isDeleting ? 'translateX(-20px) scale(0.95)' : 'translateX(0) scale(1)',
+                    maxHeight: isDeleting ? 0 : 'none',
+                    marginBottom: isDeleting ? 0 : undefined,
+                    padding: isDeleting ? 0 : undefined,
+                    overflow: 'hidden',
+                    pointerEvents: isDeleting ? 'none' : 'auto',
                   }}
-                  onClick={() => handleEntryClick(entry)}
+                  onClick={() => !isDeleting && handleEntryClick(entry)}
                   onMouseEnter={(e) => {
-                    if (!isSelected) {
+                    if (!isSelected && !isDeleting) {
                       e.currentTarget.style.borderColor = 'var(--theme-primary)'
                       e.currentTarget.style.backgroundColor = 'var(--theme-hover)'
                     }
                   }}
                   onMouseLeave={(e) => {
-                    if (!isSelected) {
+                    if (!isSelected && !isDeleting) {
                       e.currentTarget.style.borderColor = 'var(--theme-border)'
                       e.currentTarget.style.backgroundColor = 'var(--theme-bg)'
                     }
                   }}
                 >
                 <Stack gap="xs">
-                  {/* Date */}
-                  <Text
-                    size="xs"
-                    style={{
-                      color: 'var(--theme-text-secondary)',
-                      fontWeight: 400,
-                    }}
-                  >
-                    {formatDate(entry.created_at)}
-                  </Text>
+                  {/* Date and Draft badge */}
+                  <Group justify="space-between" align="center" gap="xs">
+                    <Text
+                      size="xs"
+                      style={{
+                        color: 'var(--theme-text-secondary)',
+                        fontWeight: 400,
+                      }}
+                    >
+                      {formatDate(entry.created_at)}
+                    </Text>
+                    {entry.is_draft && (
+                      <Box
+                        style={{
+                          backgroundColor: 'var(--theme-hover)',
+                          border: '1px solid var(--theme-border)',
+                          borderRadius: '4px',
+                          padding: '2px 6px',
+                        }}
+                      >
+                        <Text
+                          size="xs"
+                          style={{
+                            color: 'var(--theme-text-secondary)',
+                            fontWeight: 500,
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.5px',
+                            fontSize: '10px',
+                          }}
+                        >
+                          Черновик
+                        </Text>
+                      </Box>
+                    )}
+                  </Group>
 
                   {/* Title or content preview */}
                   {entry.title ? (

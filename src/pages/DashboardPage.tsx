@@ -29,6 +29,9 @@ export function DashboardPage() {
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [sidebarOpened, setSidebarOpened] = useState(false)
   const [searchQuery, setSearchQuery] = useState<string>('')
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [deletingEntryId, setDeletingEntryId] = useState<string | null>(null)
+  const [draftEntryId, setDraftEntryId] = useState<string | null>(null)
   const editorRef = useRef<NewEntryEditorHandle>(null)
   const isMobile = useMediaQuery('(max-width: 768px)')
 
@@ -153,6 +156,47 @@ export function DashboardPage() {
     }
   }
 
+  const handleDeleteEntry = async () => {
+    if (!selectedEntry) return
+
+    const deletedEntryId = selectedEntry.id
+
+    try {
+      setIsDeleting(true)
+      setDeletingEntryId(deletedEntryId)
+      
+      // Start fade-out animation
+      await new Promise(resolve => setTimeout(resolve, 100))
+      
+      // Delete entry from backend
+      await apiClient.deleteEntry(deletedEntryId)
+      
+      // Wait for fade-out animation to complete (400ms more)
+      await new Promise(resolve => setTimeout(resolve, 400))
+      
+      // Remove entry from local state after animation
+      setEntries((prevEntries) =>
+        prevEntries.filter((entry) => entry.id !== deletedEntryId)
+      )
+
+      // Clear selection after animation completes
+      setSelectedEntry(null)
+      setIsNewEntry(false)
+      setIsEditingEntry(false)
+      setSearchParams({})
+      setIsDeleting(false)
+      setDeletingEntryId(null)
+
+      // Refresh entries list to ensure consistency
+      fetchEntries(1, false)
+    } catch (error) {
+      console.error('Failed to delete entry:', error)
+      setIsDeleting(false)
+      setDeletingEntryId(null)
+      // You might want to show an error notification here
+    }
+  }
+
   const handleWordCountChange = (count: number) => {
     setWordCount(count)
   }
@@ -166,6 +210,36 @@ export function DashboardPage() {
     setSearchQuery(`#${tag}`)
     setCurrentPage(1)
   }
+
+  const handleAutoSave = useCallback(async (title: string | null, content: string): Promise<string | null> => {
+    if (!content.trim()) {
+      return null
+    }
+
+    try {
+      if (draftEntryId) {
+        // Update existing draft
+        await apiClient.updateEntry(draftEntryId, {
+          title,
+          content,
+          is_draft: true,
+        })
+        return draftEntryId
+      } else {
+        // Create new draft
+        const draftEntry = await apiClient.createEntry({
+          title,
+          content,
+          is_draft: true,
+        })
+        setDraftEntryId(draftEntry.id)
+        return draftEntry.id
+      }
+    } catch (error) {
+      console.error('Auto-save failed:', error)
+      return null
+    }
+  }, [draftEntryId])
 
   const handleSaveEntry = useCallback(async () => {
     if (!editorRef.current) return
@@ -215,16 +289,30 @@ export function DashboardPage() {
         setSelectedEntry(finalEntry)
         setSearchParams({ entry: finalEntry.id })
       } else {
-        // Create new entry
-        const newEntry = await apiClient.createEntry({
-          title: title.trim() || null,
-          content: content.trim(),
-          is_draft: false,
-        })
+        // Publish entry (either create new or publish existing draft)
+        let publishedEntry: EntryResponse
+
+        if (draftEntryId) {
+          // Publish existing draft by changing is_draft to false
+          publishedEntry = await apiClient.updateEntry(draftEntryId, {
+            title: title.trim() || null,
+            content: content.trim(),
+            is_draft: false,
+          })
+          setDraftEntryId(null)
+        } else {
+          // Create new entry (not a draft)
+          publishedEntry = await apiClient.createEntry({
+            title: title.trim() || null,
+            content: content.trim(),
+            is_draft: false,
+          })
+        }
 
         // Reset editor immediately
         editorRef.current.reset()
         setWordCount(0)
+        setDraftEntryId(null)
 
         // Show AI analysis loader immediately after saving
         setIsAnalyzing(true)
@@ -240,7 +328,7 @@ export function DashboardPage() {
         await new Promise(resolve => setTimeout(resolve, 5000))
 
         // Fetch the updated entry with AI analysis
-        const updatedEntry = await apiClient.getEntryById(newEntry.id)
+        const updatedEntry = await apiClient.getEntryById(publishedEntry.id)
 
         // Refresh entries list one more time to ensure it's up to date
         await fetchEntries(1, false)
@@ -258,7 +346,7 @@ export function DashboardPage() {
       setIsSaving(false)
       setIsAnalyzing(false)
     }
-  }, [fetchEntries, logout, setSearchParams, isEditingEntry, selectedEntry])
+  }, [fetchEntries, logout, setSearchParams, isEditingEntry, selectedEntry, draftEntryId])
 
   // Show loading while auth is being checked or entries are loading
   if (authLoading || (loading && entries.length === 0)) {
@@ -335,6 +423,7 @@ export function DashboardPage() {
             onSearch={handleSearch}
             searchQuery={searchQuery}
             selectedEntryId={selectedEntry?.id || null}
+            deletingEntryId={deletingEntryId}
           />
         )}
         {isMobile && (
@@ -350,6 +439,7 @@ export function DashboardPage() {
             opened={sidebarOpened}
             onClose={() => setSidebarOpened(false)}
             selectedEntryId={selectedEntry?.id || null}
+            deletingEntryId={deletingEntryId}
           />
         )}
 
@@ -419,14 +509,33 @@ export function DashboardPage() {
               ref={editorRef}
               onContentChange={handleWordCountChange}
               onSave={handleSaveEntry}
+              onAutoSave={handleAutoSave}
               isSaving={isSaving}
               wordCount={wordCount}
               initialTitle={isEditingEntry && selectedEntry ? selectedEntry.title || '' : ''}
               initialContent={isEditingEntry && selectedEntry ? selectedEntry.content : ''}
-              buttonText={isEditingEntry ? 'Сохранить изменения' : 'Сохранить'}
+              buttonText={isEditingEntry ? 'Сохранить изменения' : (draftEntryId ? 'Опубликовать' : 'Сохранить')}
+              draftEntryId={draftEntryId}
+              isEditing={isEditingEntry}
             />
           ) : selectedEntry ? (
-            <EntryView entry={selectedEntry} onEdit={handleEditEntry} onTagClick={handleTagClick} searchQuery={searchQuery} />
+            <Box
+              style={{
+                opacity: isDeleting ? 0 : 1,
+                transform: isDeleting ? 'translateY(-30px) scale(0.95)' : 'translateY(0) scale(1)',
+                transition: isDeleting ? 'opacity 0.5s ease, transform 0.5s ease' : 'none',
+                pointerEvents: isDeleting ? 'none' : 'auto',
+                filter: isDeleting ? 'blur(4px)' : 'blur(0)',
+              }}
+            >
+              <EntryView 
+                entry={selectedEntry} 
+                onEdit={handleEditEntry} 
+                onDelete={handleDeleteEntry}
+                onTagClick={handleTagClick} 
+                searchQuery={searchQuery} 
+              />
+            </Box>
           ) : (
             <Box
               style={{
