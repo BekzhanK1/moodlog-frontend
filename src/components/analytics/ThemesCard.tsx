@@ -1,8 +1,13 @@
-import { Card, Text, Stack, Group, Box, Progress } from '@mantine/core'
+import { Card, Text, Stack, Group, Box, Progress, ActionIcon, Button } from '@mantine/core'
 import { useMediaQuery } from '@mantine/hooks'
-import { IconBulb } from '@tabler/icons-react'
+import { IconBulb, IconChevronLeft, IconChevronRight, IconCalendar } from '@tabler/icons-react'
 import { useEffect, useState } from 'react'
 import { apiClient } from '../../utils/api'
+
+const monthNames = [
+  'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
+  'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'
+]
 
 interface Theme {
   tag: string
@@ -14,13 +19,18 @@ export function ThemesCard() {
   const isMobile = useMediaQuery('(max-width: 768px)')
   const [themes, setThemes] = useState<Theme[]>([])
   const [loading, setLoading] = useState(true)
+  
+  // Состояние для текущего месяца
+  const now = new Date()
+  const [currentYear, setCurrentYear] = useState(now.getFullYear())
+  const [currentMonth, setCurrentMonth] = useState(now.getMonth() + 1)
 
   useEffect(() => {
     const fetchData = async () => {
+      setLoading(true)
       try {
-        const now = new Date()
-        const startDate = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0]
-        const endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0]
+        const startDate = new Date(currentYear, currentMonth - 1, 1).toISOString().split('T')[0]
+        const endDate = new Date(currentYear, currentMonth, 0).toISOString().split('T')[0]
         
         const result = await apiClient.getMainThemes(startDate, endDate)
         setThemes(result)
@@ -31,7 +41,45 @@ export function ThemesCard() {
       }
     }
     fetchData()
-  }, [])
+  }, [currentYear, currentMonth])
+
+  const handlePrevious = () => {
+    if (currentMonth > 1) {
+      setCurrentMonth(currentMonth - 1)
+    } else {
+      setCurrentYear(currentYear - 1)
+      setCurrentMonth(12)
+    }
+  }
+
+  const handleNext = () => {
+    const now = new Date()
+    const isCurrentMonth = currentYear === now.getFullYear() && currentMonth === now.getMonth() + 1
+    if (isCurrentMonth) {
+      return
+    }
+    if (currentMonth < 12) {
+      setCurrentMonth(currentMonth + 1)
+    } else {
+      setCurrentYear(currentYear + 1)
+      setCurrentMonth(1)
+    }
+  }
+
+  const handleCurrentMonth = () => {
+    const now = new Date()
+    setCurrentYear(now.getFullYear())
+    setCurrentMonth(now.getMonth() + 1)
+  }
+
+  const isCurrentMonth = () => {
+    const now = new Date()
+    return currentYear === now.getFullYear() && currentMonth === now.getMonth() + 1
+  }
+
+  const getMonthLabel = () => {
+    return `${monthNames[currentMonth - 1]} ${currentYear}`
+  }
 
   if (loading) {
     return (
@@ -59,15 +107,55 @@ export function ThemesCard() {
       }}
     >
       <Stack gap="md">
-        <Text
-          style={{
-            fontSize: isMobile ? '18px' : '20px',
-            fontWeight: 600,
-            color: 'var(--theme-text)',
-          }}
-        >
-          Темы и триггеры
-        </Text>
+        <Group justify="space-between" align="center" wrap="wrap">
+          <Text
+            style={{
+              fontSize: isMobile ? '18px' : '20px',
+              fontWeight: 600,
+              color: 'var(--theme-text)',
+            }}
+          >
+            Темы и триггеры
+          </Text>
+          <Group gap="xs" wrap="nowrap">
+            <ActionIcon
+              variant="subtle"
+              size="sm"
+              onClick={handlePrevious}
+              style={{
+                color: 'var(--theme-text)',
+              }}
+            >
+              <IconChevronLeft size={16} />
+            </ActionIcon>
+            <Text style={{ color: 'var(--theme-text)', minWidth: isMobile ? '120px' : '150px', textAlign: 'center', fontSize: isMobile ? '13px' : '14px' }}>
+              {getMonthLabel()}
+            </Text>
+            <ActionIcon
+              variant="subtle"
+              size="sm"
+              onClick={handleNext}
+              disabled={isCurrentMonth()}
+              style={{
+                color: isCurrentMonth() ? 'var(--theme-text-secondary)' : 'var(--theme-text)',
+                cursor: isCurrentMonth() ? 'not-allowed' : 'pointer',
+              }}
+            >
+              <IconChevronRight size={16} />
+            </ActionIcon>
+            <Button
+              variant="subtle"
+              size="sm"
+              leftSection={<IconCalendar size={14} />}
+              onClick={handleCurrentMonth}
+              style={{
+                color: 'var(--theme-text)',
+              }}
+            >
+              {isMobile ? 'Сейчас' : 'Текущий'}
+            </Button>
+          </Group>
+        </Group>
 
         {themes.length === 0 ? (
           <Text style={{ color: 'var(--theme-text-secondary)', fontSize: isMobile ? '14px' : '16px' }}>
@@ -83,7 +171,7 @@ export function ThemesCard() {
                 marginBottom: '8px',
               }}
             >
-              Ваши главные темы в {new Date().toLocaleDateString('ru-RU', { month: 'long' })}:
+              Ваши главные темы в {monthNames[currentMonth - 1]}:
             </Text>
 
             <Stack gap="sm">

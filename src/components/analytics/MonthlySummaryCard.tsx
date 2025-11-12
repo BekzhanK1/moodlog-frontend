@@ -1,8 +1,9 @@
 import { Card, Text, Stack, Group, Box, Divider, Button, ActionIcon } from '@mantine/core'
 import { useMediaQuery } from '@mantine/hooks'
-import { IconBrain, IconTrendingUp, IconSparkles, IconBulb, IconChevronLeft, IconChevronRight, IconCalendar } from '@tabler/icons-react'
+import { IconBrain, IconTrendingUp, IconSparkles, IconBulb, IconChevronLeft, IconChevronRight, IconCalendar, IconList } from '@tabler/icons-react'
 import { useEffect, useState } from 'react'
 import { apiClient } from '../../utils/api'
+import { InsightsListModal } from './InsightsListModal'
 
 const monthNames = [
   'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
@@ -41,6 +42,7 @@ export function MonthlySummaryCard() {
   const [loading, setLoading] = useState(true)
   const [generating, setGenerating] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [listModalOpened, setListModalOpened] = useState(false)
   
   // Состояние для текущего месяца
   const now = new Date()
@@ -121,6 +123,17 @@ export function MonthlySummaryCard() {
     const now = new Date()
     setCurrentYear(now.getFullYear())
     setCurrentMonth(now.getMonth() + 1)
+  }
+
+  const handleSelectFromList = (periodKey: string) => {
+    // periodKey format: "2025-11"
+    const match = periodKey.match(/^(\d{4})-(\d{2})$/)
+    if (match) {
+      const year = parseInt(match[1], 10)
+      const month = parseInt(match[2], 10)
+      setCurrentYear(year)
+      setCurrentMonth(month)
+    }
   }
 
   const getMonthLabel = () => {
@@ -257,8 +270,26 @@ export function MonthlySummaryCard() {
             >
               {isMobile ? 'Сейчас' : 'Текущий'}
             </Button>
+            <Button
+              variant="subtle"
+              size="sm"
+              leftSection={<IconList size={14} />}
+              onClick={() => setListModalOpened(true)}
+              style={{
+                color: 'var(--theme-text)',
+              }}
+            >
+              {isMobile ? 'Список' : 'Все сводки'}
+            </Button>
           </Group>
         </Group>
+
+        <InsightsListModal
+          opened={listModalOpened}
+          onClose={() => setListModalOpened(false)}
+          type="monthly"
+          onSelect={handleSelectFromList}
+        />
 
         {loading && (
           <Box style={{ textAlign: 'center', padding: '40px 0' }}>

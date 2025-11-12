@@ -1,8 +1,9 @@
 import { Card, Text, Stack, Group, Box, Divider, Button, ActionIcon } from '@mantine/core'
 import { useMediaQuery } from '@mantine/hooks'
-import { IconBrain, IconTrendingUp, IconSparkles, IconBulb, IconChevronLeft, IconChevronRight, IconCalendar } from '@tabler/icons-react'
+import { IconBrain, IconTrendingUp, IconSparkles, IconBulb, IconChevronLeft, IconChevronRight, IconCalendar, IconList } from '@tabler/icons-react'
 import { useEffect, useState } from 'react'
 import { apiClient } from '../../utils/api'
+import { InsightsListModal } from './InsightsListModal'
 
 // Функция для получения ISO недели из даты
 function getISOWeek(date: Date): { year: number; week: number } {
@@ -47,6 +48,7 @@ export function WeeklySummaryCard() {
   const [loading, setLoading] = useState(true)
   const [generating, setGenerating] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [listModalOpened, setListModalOpened] = useState(false)
   
   // Состояние для текущей недели
   const now = new Date()
@@ -132,6 +134,17 @@ export function WeeklySummaryCard() {
     const nowISO = getISOWeek(new Date())
     setCurrentYear(nowISO.year)
     setCurrentWeek(nowISO.week)
+  }
+
+  const handleSelectFromList = (periodKey: string) => {
+    // periodKey format: "2025-W46"
+    const match = periodKey.match(/^(\d{4})-W(\d{2})$/)
+    if (match) {
+      const year = parseInt(match[1], 10)
+      const week = parseInt(match[2], 10)
+      setCurrentYear(year)
+      setCurrentWeek(week)
+    }
   }
 
   const getWeekLabel = () => {
@@ -269,8 +282,26 @@ export function WeeklySummaryCard() {
             >
               {isMobile ? 'Сейчас' : 'Текущий'}
             </Button>
+            <Button
+              variant="subtle"
+              size="sm"
+              leftSection={<IconList size={14} />}
+              onClick={() => setListModalOpened(true)}
+              style={{
+                color: 'var(--theme-text)',
+              }}
+            >
+              {isMobile ? 'Список' : 'Все сводки'}
+            </Button>
           </Group>
         </Group>
+
+        <InsightsListModal
+          opened={listModalOpened}
+          onClose={() => setListModalOpened(false)}
+          type="weekly"
+          onSelect={handleSelectFromList}
+        />
 
         {loading && (
           <Box style={{ textAlign: 'center', padding: '40px 0' }}>

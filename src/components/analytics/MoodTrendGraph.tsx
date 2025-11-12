@@ -10,7 +10,7 @@ interface DataPoint {
   num_entries: number
 }
 
-type ViewType = 'month' | 'week'
+type ViewType = 'month' | 'week' | 'year'
 
 export function MoodTrendGraph() {
   const isMobile = useMediaQuery('(max-width: 768px)')
@@ -40,19 +40,62 @@ export function MoodTrendGraph() {
       try {
         let startDate: string
         let endDate: string
+        let rawData: DataPoint[]
 
         if (viewType === 'week') {
           const { start, end } = getWeekDates(currentDate)
           startDate = start.toISOString().split('T')[0]
           endDate = end.toISOString().split('T')[0]
+          rawData = await apiClient.getMoodTrend(startDate, endDate)
+        } else if (viewType === 'year') {
+          // Запрашиваем данные за весь год
+          startDate = new Date(year, 0, 1).toISOString().split('T')[0]
+          endDate = new Date(year, 11, 31).toISOString().split('T')[0]
+          rawData = await apiClient.getMoodTrend(startDate, endDate)
+          
+          // Группируем данные по месяцам и вычисляем средний рейтинг
+          const monthlyData: { [key: number]: { ratings: number[]; numEntries: number } } = {}
+          
+          rawData.forEach((point) => {
+            const date = new Date(point.date)
+            const month = date.getMonth() // 0-11
+            if (!monthlyData[month]) {
+              monthlyData[month] = { ratings: [], numEntries: 0 }
+            }
+            monthlyData[month].ratings.push(point.mood_rating)
+            monthlyData[month].numEntries += point.num_entries
+          })
+          
+          // Создаем массив из 12 месяцев (всегда показываем все месяцы)
+          const processedData: DataPoint[] = []
+          for (let m = 0; m < 12; m++) {
+            if (monthlyData[m] && monthlyData[m].ratings.length > 0) {
+              const avgRating = monthlyData[m].ratings.reduce((sum, r) => sum + r, 0) / monthlyData[m].ratings.length
+              processedData.push({
+                date: `${year}-${String(m + 1).padStart(2, '0')}-01`, // Первое число месяца для отображения
+                mood_rating: Math.round(avgRating * 100) / 100,
+                num_entries: monthlyData[m].numEntries
+              })
+            } else {
+              // Если нет данных за месяц, используем null для пропуска в графике
+              // Но все равно добавляем точку для правильного масштабирования
+              processedData.push({
+                date: `${year}-${String(m + 1).padStart(2, '0')}-01`,
+                mood_rating: 0, // Будет пропущено при рендеринге
+                num_entries: 0
+              })
+            }
+          }
+          
+          rawData = processedData
         } else {
           startDate = new Date(year, month, 1).toISOString().split('T')[0]
           const lastDay = new Date(year, month + 1, 0).getDate()
           endDate = new Date(year, month, lastDay).toISOString().split('T')[0]
+          rawData = await apiClient.getMoodTrend(startDate, endDate)
         }
         
-        const result = await apiClient.getMoodTrend(startDate, endDate)
-        setData(result)
+        setData(rawData)
         
         // Минимальная задержка для плавности
         await new Promise(resolve => setTimeout(resolve, 500))
@@ -75,6 +118,8 @@ export function MoodTrendGraph() {
       const newDate = new Date(currentDate)
       newDate.setDate(newDate.getDate() - 7)
       setCurrentDate(newDate)
+    } else if (viewType === 'year') {
+      setCurrentDate(new Date(year - 1, 0, 1))
     } else {
       setCurrentDate(new Date(year, month - 1, 1))
     }
@@ -85,6 +130,12 @@ export function MoodTrendGraph() {
       const newDate = new Date(currentDate)
       newDate.setDate(newDate.getDate() + 7)
       setCurrentDate(newDate)
+    } else if (viewType === 'year') {
+      const now = new Date()
+      const currentYear = now.getFullYear()
+      if (year < currentYear) {
+        setCurrentDate(new Date(year + 1, 0, 1))
+      }
     } else {
       setCurrentDate(new Date(year, month + 1, 1))
     }
@@ -100,8 +151,23 @@ export function MoodTrendGraph() {
       const startStr = start.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })
       const endStr = end.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', year: 'numeric' })
       return `${startStr} - ${endStr}`
+    } else if (viewType === 'year') {
+      return `${year}`
     } else {
       return `${monthNames[month]} ${year}`
+    }
+  }
+
+  const isCurrentPeriod = () => {
+    const now = new Date()
+    if (viewType === 'year') {
+      return year === now.getFullYear()
+    } else if (viewType === 'week') {
+      const currentISO = getWeekDates(new Date())
+      const selectedISO = getWeekDates(currentDate)
+      return currentISO.start.getTime() === selectedISO.start.getTime()
+    } else {
+      return year === now.getFullYear() && month === now.getMonth()
     }
   }
 
@@ -184,6 +250,7 @@ export function MoodTrendGraph() {
                 data={[
                   { value: 'month', label: 'Месяц' },
                   { value: 'week', label: 'Неделя' },
+                  { value: 'year', label: 'Год' },
                 ]}
                 size="sm"
                 style={{ width: isMobile ? '90px' : '110px' }}
@@ -223,8 +290,10 @@ export function MoodTrendGraph() {
                 variant="subtle"
                 size="sm"
                 onClick={handleNext}
+                disabled={isCurrentPeriod() && viewType === 'year'}
                 style={{
-                  color: 'var(--theme-text)',
+                  color: isCurrentPeriod() && viewType === 'year' ? 'var(--theme-text-secondary)' : 'var(--theme-text)',
+                  cursor: isCurrentPeriod() && viewType === 'year' ? 'not-allowed' : 'pointer',
                 }}
               >
                 <IconChevronRight size={16} />
@@ -259,7 +328,11 @@ export function MoodTrendGraph() {
     )
   }
 
-  if (data.length === 0) {
+  const hasData = viewType === 'year' 
+    ? data.some(p => p.num_entries > 0)
+    : data.length > 0
+
+  if (!hasData) {
     return (
       <Card
         padding={isMobile ? 'md' : 'lg'}
@@ -287,6 +360,7 @@ export function MoodTrendGraph() {
                 data={[
                   { value: 'month', label: 'Месяц' },
                   { value: 'week', label: 'Неделя' },
+                  { value: 'year', label: 'Год' },
                 ]}
                 size="sm"
                 style={{ width: isMobile ? '90px' : '110px' }}
@@ -326,8 +400,10 @@ export function MoodTrendGraph() {
                 variant="subtle"
                 size="sm"
                 onClick={handleNext}
+                disabled={isCurrentPeriod() && viewType === 'year'}
                 style={{
-                  color: 'var(--theme-text)',
+                  color: isCurrentPeriod() && viewType === 'year' ? 'var(--theme-text-secondary)' : 'var(--theme-text)',
+                  cursor: isCurrentPeriod() && viewType === 'year' ? 'not-allowed' : 'pointer',
                 }}
               >
                 <IconChevronRight size={16} />
@@ -354,14 +430,36 @@ export function MoodTrendGraph() {
   }
 
   // Подготовка точек для графика
-  const points = data.map((point, index) => ({
-    x: scaleX(index, data.length),
-    y: scaleY(point.mood_rating),
-    rating: point.mood_rating,
-    date: point.date,
-  }))
+  // Для годового вида используем все 12 месяцев для правильного масштабирования
+  const pointsToRender = viewType === 'year' 
+    ? data.filter(p => p.num_entries > 0) // Только месяцы с данными для рендеринга
+    : data
+  
+  // Для годового вида масштабируем по 12 месяцам, для остальных - по количеству точек
+  const totalPoints = viewType === 'year' ? 12 : data.length
+  
+  const points = pointsToRender.map((point, index) => {
+    // Для годового вида вычисляем позицию на основе месяца
+    let x: number
+    if (viewType === 'year') {
+      const pointDate = new Date(point.date)
+      const monthIndex = pointDate.getMonth() // 0-11
+      x = scaleX(monthIndex, 12) // Всегда 12 месяцев
+    } else {
+      x = scaleX(index, pointsToRender.length)
+    }
+    
+    return {
+      x,
+      y: scaleY(point.mood_rating),
+      rating: point.mood_rating,
+      date: point.date,
+    }
+  })
 
-  const avgRating = data.reduce((sum, p) => sum + p.mood_rating, 0) / data.length
+  const avgRating = pointsToRender.length > 0 
+    ? pointsToRender.reduce((sum, p) => sum + p.mood_rating, 0) / pointsToRender.length
+    : 0
   const lineColor = getLineColor(avgRating)
 
   // Создание области под графиком для градиента
@@ -396,6 +494,7 @@ export function MoodTrendGraph() {
                 data={[
                   { value: 'month', label: 'Месяц' },
                   { value: 'week', label: 'Неделя' },
+                  { value: 'year', label: 'Год' },
                 ]}
                 size="sm"
                 style={{ width: isMobile ? '90px' : '110px' }}
@@ -435,8 +534,10 @@ export function MoodTrendGraph() {
                 variant="subtle"
                 size="sm"
                 onClick={handleNext}
+                disabled={isCurrentPeriod() && viewType === 'year'}
                 style={{
-                  color: 'var(--theme-text)',
+                  color: isCurrentPeriod() && viewType === 'year' ? 'var(--theme-text-secondary)' : 'var(--theme-text)',
+                  cursor: isCurrentPeriod() && viewType === 'year' ? 'not-allowed' : 'pointer',
                 }}
               >
                 <IconChevronRight size={16} />
@@ -593,7 +694,7 @@ export function MoodTrendGraph() {
                   opacity="0.95"
                   style={{ filter: 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1))' }}
                 />
-                {/* Дата */}
+                {/* Дата или месяц */}
                 <text
                   x={points[hoveredPoint].x}
                   y={points[hoveredPoint].y - 30}
@@ -602,10 +703,12 @@ export function MoodTrendGraph() {
                   fontWeight="500"
                   textAnchor="middle"
                 >
-                  {new Date(points[hoveredPoint].date).toLocaleDateString('ru-RU', { 
-                    day: 'numeric', 
-                    month: 'short' 
-                  })}
+                  {viewType === 'year' 
+                    ? monthNames[new Date(points[hoveredPoint].date).getMonth()]
+                    : new Date(points[hoveredPoint].date).toLocaleDateString('ru-RU', { 
+                        day: 'numeric', 
+                        month: 'short' 
+                      })}
                 </text>
                 {/* Mood rating */}
                 <text
@@ -630,14 +733,25 @@ export function MoodTrendGraph() {
         </Box>
 
         {/* Подписи осей */}
-        <Group justify="space-between" style={{ paddingTop: '8px', fontSize: '11px', color: 'var(--theme-text-secondary)' }}>
-          <Text size="xs" style={{ color: 'var(--theme-text-secondary)' }}>
-            {data.length > 0 && new Date(data[0].date).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}
-          </Text>
-          <Text size="xs" style={{ color: 'var(--theme-text-secondary)' }}>
-            {data.length > 0 && new Date(data[data.length - 1].date).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}
-          </Text>
-        </Group>
+        {viewType === 'year' ? (
+          <Group justify="space-between" style={{ paddingTop: '8px', fontSize: '11px', color: 'var(--theme-text-secondary)' }}>
+            <Text size="xs" style={{ color: 'var(--theme-text-secondary)' }}>
+              Январь
+            </Text>
+            <Text size="xs" style={{ color: 'var(--theme-text-secondary)' }}>
+              Декабрь
+            </Text>
+          </Group>
+        ) : (
+          <Group justify="space-between" style={{ paddingTop: '8px', fontSize: '11px', color: 'var(--theme-text-secondary)' }}>
+            <Text size="xs" style={{ color: 'var(--theme-text-secondary)' }}>
+              {pointsToRender.length > 0 && new Date(pointsToRender[0].date).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}
+            </Text>
+            <Text size="xs" style={{ color: 'var(--theme-text-secondary)' }}>
+              {pointsToRender.length > 0 && new Date(pointsToRender[pointsToRender.length - 1].date).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}
+            </Text>
+          </Group>
+        )}
       </Stack>
     </Card>
   )

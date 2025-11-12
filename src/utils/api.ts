@@ -306,6 +306,38 @@ class ApiClient {
       method: 'POST',
     })
   }
+
+  async listInsights(type?: 'monthly' | 'weekly', page: number = 1, perPage: number = 100): Promise<{
+    insights: Array<{
+      id: string
+      type: string
+      period_key: string
+      period_label: string
+      created_at: string
+    }>
+    total: number
+    page: number
+    per_page: number
+    total_pages: number
+  }> {
+    const params = new URLSearchParams()
+    if (type) params.append('type', type)
+    params.append('page', page.toString())
+    params.append('per_page', perPage.toString())
+    return this.request<{
+      insights: Array<{
+        id: string
+        type: string
+        period_key: string
+        period_label: string
+        created_at: string
+      }>
+      total: number
+      page: number
+      per_page: number
+      total_pages: number
+    }>(`/insights?${params.toString()}`)
+  }
 }
 
 export const apiClient = new ApiClient(API_BASE_URL)
