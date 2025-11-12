@@ -13,14 +13,17 @@ import {
   IconHash,
 } from '@tabler/icons-react'
 import { EntryResponse } from '../../utils/api'
+import { shouldHighlightTag } from '../../utils/highlight'
 
 interface RightSidebarProps {
   entry?: EntryResponse | null
   wordCount?: number
   isNewEntry?: boolean
+  onTagClick?: (tag: string) => void
+  searchQuery?: string
 }
 
-export function RightSidebar({ entry, wordCount, isNewEntry }: RightSidebarProps) {
+export function RightSidebar({ entry, wordCount, isNewEntry, onTagClick, searchQuery }: RightSidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false)
 
   const formatDate = (dateString: string) => {
@@ -185,34 +188,6 @@ export function RightSidebar({ entry, wordCount, isNewEntry }: RightSidebarProps
                 </Text>
               </Box>
 
-              {entry.updated_at !== entry.created_at && (
-                <>
-                  <Box>
-                    <Text
-                      size="xs"
-                      style={{
-                        color: 'var(--theme-text-secondary)',
-                        fontWeight: 400,
-                        marginBottom: '8px',
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.5px',
-                      }}
-                    >
-                      Дата обновления
-                    </Text>
-                    <Text
-                      size="sm"
-                      style={{
-                        color: 'var(--theme-text)',
-                        fontWeight: 400,
-                      }}
-                    >
-                      {formatDate(entry.updated_at)}
-                    </Text>
-                  </Box>
-                </>
-              )}
-
               <Divider style={{ borderColor: 'var(--theme-border)' }} />
 
               {/* Mood rating */}
@@ -272,58 +247,49 @@ export function RightSidebar({ entry, wordCount, isNewEntry }: RightSidebarProps
                       Теги
                     </Text>
                     <Group gap="xs" style={{ flexWrap: 'wrap' }}>
-                      {entry.tags.map((tag, idx) => (
-                        <Badge
-                          key={idx}
-                          variant="light"
-                          radius="sm"
-                          leftSection={<IconHash size={10} />}
-                          style={{
-                            backgroundColor: 'var(--theme-hover)',
-                            color: 'var(--theme-text-secondary)',
-                            border: '1px solid var(--theme-border)',
-                            fontWeight: 400,
-                            fontSize: '11px',
-                            padding: '4px 8px',
-                          }}
-                        >
-                          {tag}
-                        </Badge>
-                      ))}
+                      {entry.tags.map((tag, idx) => {
+                        const isHighlighted = shouldHighlightTag(tag, searchQuery || '')
+                        return (
+                          <Badge
+                            key={idx}
+                            variant="light"
+                            radius="sm"
+                            leftSection={<IconHash size={10} />}
+                            onClick={() => onTagClick && onTagClick(tag)}
+                            style={{
+                              backgroundColor: isHighlighted ? 'var(--theme-primary)' : 'var(--theme-hover)',
+                              color: isHighlighted ? 'var(--theme-bg)' : 'var(--theme-text-secondary)',
+                              border: isHighlighted ? '1px solid var(--theme-primary)' : '1px solid var(--theme-border)',
+                              fontWeight: isHighlighted ? 500 : 400,
+                              fontSize: '11px',
+                              padding: '4px 8px',
+                              cursor: onTagClick ? 'pointer' : 'default',
+                              transition: 'all 0.2s ease',
+                            }}
+                            onMouseEnter={(e) => {
+                              if (onTagClick && !isHighlighted) {
+                                e.currentTarget.style.backgroundColor = 'var(--theme-primary)'
+                                e.currentTarget.style.color = 'var(--theme-bg)'
+                                e.currentTarget.style.borderColor = 'var(--theme-primary)'
+                              }
+                            }}
+                            onMouseLeave={(e) => {
+                              if (onTagClick && !isHighlighted) {
+                                e.currentTarget.style.backgroundColor = 'var(--theme-hover)'
+                                e.currentTarget.style.color = 'var(--theme-text-secondary)'
+                                e.currentTarget.style.borderColor = 'var(--theme-border)'
+                              }
+                            }}
+                          >
+                            {tag}
+                          </Badge>
+                        )
+                      })}
                     </Group>
                   </Box>
                 </>
               )}
 
-              {/* AI processed */}
-              {entry.ai_processed_at && (
-                <>
-                  <Divider style={{ borderColor: 'var(--theme-border)' }} />
-                  <Box>
-                    <Text
-                      size="xs"
-                      style={{
-                        color: 'var(--theme-text-secondary)',
-                        fontWeight: 400,
-                        marginBottom: '8px',
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.5px',
-                      }}
-                    >
-                      Обработано AI
-                    </Text>
-                    <Text
-                      size="sm"
-                      style={{
-                        color: 'var(--theme-text)',
-                        fontWeight: 400,
-                      }}
-                    >
-                      {formatDate(entry.ai_processed_at)}
-                    </Text>
-                  </Box>
-                </>
-              )}
             </>
           ) : null}
         </Stack>

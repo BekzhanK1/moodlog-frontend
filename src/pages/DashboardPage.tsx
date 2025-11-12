@@ -1,10 +1,10 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Box, Loader, Alert, Stack, ScrollArea } from '@mantine/core'
+import { Box, Loader, Alert, Stack, ScrollArea, Text } from '@mantine/core'
 import { useMediaQuery } from '@mantine/hooks'
 import { IconAlertCircle } from '@tabler/icons-react'
 import { useAuth } from '../contexts/AuthContext'
-import { apiClient, EntryResponse } from '../utils/api'
+import { apiClient, EntryResponse, EntryListResponse } from '../utils/api'
 import { Navbar } from '../components/dashboard/Navbar'
 import { Sidebar } from '../components/dashboard/Sidebar'
 import { EntryView } from '../components/dashboard/EntryView'
@@ -23,9 +23,12 @@ export function DashboardPage() {
   const [hasMore, setHasMore] = useState(true)
   const [selectedEntry, setSelectedEntry] = useState<EntryResponse | null>(null)
   const [isNewEntry, setIsNewEntry] = useState(false)
+  const [isEditingEntry, setIsEditingEntry] = useState(false)
   const [wordCount, setWordCount] = useState(0)
   const [isSaving, setIsSaving] = useState(false)
+  const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [sidebarOpened, setSidebarOpened] = useState(false)
+  const [searchQuery, setSearchQuery] = useState<string>('')
   const editorRef = useRef<NewEntryEditorHandle>(null)
   const isMobile = useMediaQuery('(max-width: 768px)')
 
@@ -46,7 +49,12 @@ export function DashboardPage() {
       }
       setError(null)
 
-      const response = await apiClient.getEntries(page, 10)
+      let response: EntryListResponse
+      if (searchQuery.trim()) {
+        response = await apiClient.searchEntries(searchQuery.trim(), page, 10)
+      } else {
+        response = await apiClient.getEntries(page, 10)
+      }
       
       if (append) {
         setEntries((prev) => [...prev, ...response.entries])
@@ -65,7 +73,7 @@ export function DashboardPage() {
       setLoading(false)
       setLoadingMore(false)
     }
-  }, [logout])
+  }, [logout, searchQuery])
 
   useEffect(() => {
     if (isAuthenticated && !authLoading) {
@@ -73,21 +81,30 @@ export function DashboardPage() {
     }
   }, [isAuthenticated, authLoading, fetchEntries])
 
+  // Refetch entries when search query changes
+  useEffect(() => {
+    if (isAuthenticated && !authLoading) {
+      fetchEntries(1, false)
+    }
+  }, [searchQuery])
+
   // Restore selected entry from URL on mount or when entries change
   useEffect(() => {
     const entryId = searchParams.get('entry')
-    if (entryId && !selectedEntry && !isNewEntry) {
+    if (entryId && !selectedEntry && !isNewEntry && !isEditingEntry) {
       // First, try to find entry in current entries list
       const entry = entries.find((e) => e.id === entryId)
       if (entry) {
         setSelectedEntry(entry)
         setIsNewEntry(false)
+        setIsEditingEntry(false)
       } else if (entries.length > 0) {
         // Entry not in current list, fetch it directly
         apiClient.getEntryById(entryId)
           .then((fetchedEntry) => {
             setSelectedEntry(fetchedEntry)
             setIsNewEntry(false)
+            setIsEditingEntry(false)
           })
           .catch(() => {
             // Entry not found or error, clear URL param
@@ -95,7 +112,7 @@ export function DashboardPage() {
           })
       }
     }
-  }, [entries, searchParams, selectedEntry, isNewEntry, setSearchParams])
+  }, [entries, searchParams, selectedEntry, isNewEntry, isEditingEntry, setSearchParams])
 
   const handleLoadMore = useCallback(() => {
     if (!loadingMore && hasMore) {
@@ -106,7 +123,9 @@ export function DashboardPage() {
   const handleNewEntry = () => {
     setSelectedEntry(null)
     setIsNewEntry(true)
+    setIsEditingEntry(false)
     setWordCount(0)
+    setSearchQuery('') // Clear search when creating new entry
     // Clear entry from URL
     setSearchParams({})
   }
@@ -114,12 +133,38 @@ export function DashboardPage() {
   const handleEntryClick = (entry: EntryResponse) => {
     setSelectedEntry(entry)
     setIsNewEntry(false)
+    setIsEditingEntry(false)
+    // Don't clear search when clicking entry - user might want to see other search results
     // Update URL with entry ID
     setSearchParams({ entry: entry.id })
   }
 
+  const handleEditEntry = () => {
+    if (selectedEntry) {
+      setIsEditingEntry(true)
+      setIsNewEntry(false)
+      // Set word count for the entry being edited
+      const words = selectedEntry.content.trim().split(/\s+/).filter(word => word.length > 0).length
+      setWordCount(words)
+      // Set initial values in editor
+      if (editorRef.current) {
+        editorRef.current.setInitialValues(selectedEntry.title || '', selectedEntry.content)
+      }
+    }
+  }
+
   const handleWordCountChange = (count: number) => {
     setWordCount(count)
+  }
+
+  const handleSearch = (query: string) => {
+    setSearchQuery(query)
+    setCurrentPage(1)
+  }
+
+  const handleTagClick = (tag: string) => {
+    setSearchQuery(`#${tag}`)
+    setCurrentPage(1)
   }
 
   const handleSaveEntry = useCallback(async () => {
@@ -136,28 +181,84 @@ export function DashboardPage() {
       setIsSaving(true)
       setError(null)
 
-      const newEntry = await apiClient.createEntry({
-        title: title.trim() || null,
-        content: content.trim(),
-        is_draft: false,
-      })
+      if (isEditingEntry && selectedEntry) {
+        // Update existing entry
+        const updatedEntry = await apiClient.updateEntry(selectedEntry.id, {
+          title: title.trim() || null,
+          content: content.trim(),
+        })
 
-      // Reset editor
-      editorRef.current.reset()
-      setWordCount(0)
+        // Reset editor immediately
+        editorRef.current.reset()
+        setWordCount(0)
 
-      // Refresh entries list
-      await fetchEntries(1, false)
+        // Show AI analysis loader immediately after saving
+        setIsAnalyzing(true)
+        setIsEditingEntry(false)
+        setIsSaving(false) // Hide saving button loader
 
-      // Switch to view mode and select the new entry
-      setSelectedEntry(newEntry)
-      setIsNewEntry(false)
+        // Refresh entries list in background (don't wait for it)
+        fetchEntries(1, false).catch(() => {
+          // Silently handle errors, we'll refresh later
+        })
+        
+        // Wait 5 seconds for AI analysis
+        await new Promise(resolve => setTimeout(resolve, 5000))
+
+        // Fetch the updated entry with AI analysis
+        const finalEntry = await apiClient.getEntryById(updatedEntry.id)
+
+        // Refresh entries list one more time to ensure it's up to date
+        await fetchEntries(1, false)
+
+        // Select the updated entry
+        setSelectedEntry(finalEntry)
+        setSearchParams({ entry: finalEntry.id })
+      } else {
+        // Create new entry
+        const newEntry = await apiClient.createEntry({
+          title: title.trim() || null,
+          content: content.trim(),
+          is_draft: false,
+        })
+
+        // Reset editor immediately
+        editorRef.current.reset()
+        setWordCount(0)
+
+        // Show AI analysis loader immediately after saving
+        setIsAnalyzing(true)
+        setIsNewEntry(false)
+        setIsSaving(false) // Hide saving button loader
+
+        // Refresh entries list in background (don't wait for it)
+        fetchEntries(1, false).catch(() => {
+          // Silently handle errors, we'll refresh later
+        })
+        
+        // Wait 5 seconds for AI analysis
+        await new Promise(resolve => setTimeout(resolve, 5000))
+
+        // Fetch the updated entry with AI analysis
+        const updatedEntry = await apiClient.getEntryById(newEntry.id)
+
+        // Refresh entries list one more time to ensure it's up to date
+        await fetchEntries(1, false)
+
+        // Select the new entry
+        setSelectedEntry(updatedEntry)
+        setSearchParams({ entry: updatedEntry.id })
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Не удалось сохранить запись')
+      if (err instanceof Error && err.message.includes('401')) {
+        logout()
+      }
     } finally {
       setIsSaving(false)
+      setIsAnalyzing(false)
     }
-  }, [fetchEntries])
+  }, [fetchEntries, logout, setSearchParams, isEditingEntry, selectedEntry])
 
   // Show loading while auth is being checked or entries are loading
   if (authLoading || (loading && entries.length === 0)) {
@@ -231,6 +332,8 @@ export function DashboardPage() {
             onLoadMore={handleLoadMore}
             onNewEntry={handleNewEntry}
             onEntryClick={handleEntryClick}
+            onSearch={handleSearch}
+            searchQuery={searchQuery}
             selectedEntryId={selectedEntry?.id || null}
           />
         )}
@@ -242,6 +345,8 @@ export function DashboardPage() {
             onLoadMore={handleLoadMore}
             onNewEntry={handleNewEntry}
             onEntryClick={handleEntryClick}
+            onSearch={handleSearch}
+            searchQuery={searchQuery}
             opened={sidebarOpened}
             onClose={() => setSidebarOpened(false)}
             selectedEntryId={selectedEntry?.id || null}
@@ -274,16 +379,54 @@ export function DashboardPage() {
               </Alert>
             </Box>
           )}
-          {isNewEntry ? (
+          {isAnalyzing ? (
+            <Box
+              style={{
+                height: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '40px',
+                gap: '24px',
+              }}
+            >
+              <Loader size="lg" color="var(--theme-primary)" />
+              <Stack gap="xs" align="center">
+                <Text
+                  style={{
+                    fontSize: isMobile ? '16px' : '18px',
+                    fontWeight: 500,
+                    color: 'var(--theme-text)',
+                  }}
+                >
+                  Анализ записи...
+                </Text>
+                <Text
+                  size="sm"
+                  style={{
+                    color: 'var(--theme-text-secondary)',
+                    textAlign: 'center',
+                    maxWidth: '400px',
+                  }}
+                >
+                  Искусственный интеллект анализирует вашу запись и определяет настроение, теги и другие характеристики
+                </Text>
+              </Stack>
+            </Box>
+          ) : isNewEntry || isEditingEntry ? (
             <NewEntryEditor
               ref={editorRef}
               onContentChange={handleWordCountChange}
               onSave={handleSaveEntry}
               isSaving={isSaving}
               wordCount={wordCount}
+              initialTitle={isEditingEntry && selectedEntry ? selectedEntry.title || '' : ''}
+              initialContent={isEditingEntry && selectedEntry ? selectedEntry.content : ''}
+              buttonText={isEditingEntry ? 'Сохранить изменения' : 'Сохранить'}
             />
           ) : selectedEntry ? (
-            <EntryView entry={selectedEntry} />
+            <EntryView entry={selectedEntry} onEdit={handleEditEntry} onTagClick={handleTagClick} searchQuery={searchQuery} />
           ) : (
             <Box
               style={{
@@ -324,6 +467,7 @@ export function DashboardPage() {
             entry={selectedEntry}
             wordCount={wordCount}
             isNewEntry={isNewEntry}
+            onTagClick={handleTagClick}
           />
         )}
       </Box>

@@ -1,13 +1,17 @@
-import { Box, Text, Stack, Group, Badge, Divider } from '@mantine/core'
+import { Box, Text, Stack, Group, Badge, Divider, Button } from '@mantine/core'
 import { useMediaQuery } from '@mantine/hooks'
-import { IconHash } from '@tabler/icons-react'
+import { IconHash, IconPencil } from '@tabler/icons-react'
 import { EntryResponse } from '../../utils/api'
+import { highlightText, shouldHighlightTag } from '../../utils/highlight'
 
 interface EntryViewProps {
   entry: EntryResponse
+  onEdit?: () => void
+  onTagClick?: (tag: string) => void
+  searchQuery?: string
 }
 
-export function EntryView({ entry }: EntryViewProps) {
+export function EntryView({ entry, onEdit, onTagClick, searchQuery }: EntryViewProps) {
   const isMobile = useMediaQuery('(max-width: 768px)')
 
   const formatDate = (dateString: string) => {
@@ -51,30 +55,61 @@ export function EntryView({ entry }: EntryViewProps) {
       }}
     >
       <Stack gap={isMobile ? 'md' : 'lg'}>
-        {/* Title */}
-        {entry.title && (
-          <Text
-            style={{
-              fontSize: isMobile ? '24px' : '32px',
-              fontWeight: 400,
-              color: 'var(--theme-text)',
-              lineHeight: 1.3,
-            }}
-          >
-            {entry.title}
-          </Text>
-        )}
+        {/* Header with Edit button */}
+        <Group justify="space-between" align="flex-start">
+          <Stack gap="xs" style={{ flex: 1 }}>
+            {/* Title */}
+            {entry.title && (
+              <Text
+                style={{
+                  fontSize: isMobile ? '24px' : '32px',
+                  fontWeight: 400,
+                  color: 'var(--theme-text)',
+                  lineHeight: 1.3,
+                }}
+              >
+                {searchQuery && !searchQuery.startsWith('#')
+                  ? highlightText(entry.title, searchQuery, false)
+                  : entry.title}
+              </Text>
+            )}
 
-        {/* Date */}
-        <Text
-          size={isMobile ? 'xs' : 'sm'}
-          style={{
-            color: 'var(--theme-text-secondary)',
-            fontWeight: 400,
-          }}
-        >
-          {formatDate(entry.created_at)}
-        </Text>
+            {/* Date */}
+            <Text
+              size={isMobile ? 'xs' : 'sm'}
+              style={{
+                color: 'var(--theme-text-secondary)',
+                fontWeight: 400,
+              }}
+            >
+              {formatDate(entry.created_at)}
+            </Text>
+          </Stack>
+
+          {/* Edit button */}
+          {onEdit && (
+            <Button
+              leftSection={<IconPencil size={16} />}
+              variant="subtle"
+              size={isMobile ? 'sm' : 'md'}
+              onClick={onEdit}
+              radius="md"
+              style={{
+                color: 'var(--theme-text)',
+                backgroundColor: 'transparent',
+                border: '1px solid var(--theme-border)',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = 'var(--theme-hover)'
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'transparent'
+              }}
+            >
+              Редактировать
+            </Button>
+          )}
+        </Group>
 
         {/* Content */}
         <Text
@@ -87,7 +122,9 @@ export function EntryView({ entry }: EntryViewProps) {
             wordBreak: 'break-word',
           }}
         >
-          {entry.content}
+          {searchQuery && !searchQuery.startsWith('#')
+            ? highlightText(entry.content, searchQuery, false)
+            : entry.content}
         </Text>
 
         {/* Mobile: Right sidebar info at bottom */}
@@ -120,34 +157,6 @@ export function EntryView({ entry }: EntryViewProps) {
                   {countWords(entry.content)}
                 </Text>
               </Box>
-
-              {entry.updated_at !== entry.created_at && (
-                <>
-                  <Box>
-                    <Text
-                      size="xs"
-                      style={{
-                        color: 'var(--theme-text-secondary)',
-                        fontWeight: 400,
-                        marginBottom: '8px',
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.5px',
-                      }}
-                    >
-                      Дата обновления
-                    </Text>
-                    <Text
-                      size="sm"
-                      style={{
-                        color: 'var(--theme-text)',
-                        fontWeight: 400,
-                      }}
-                    >
-                      {formatDate(entry.updated_at)}
-                    </Text>
-                  </Box>
-                </>
-              )}
 
               {/* Mood rating */}
               {entry.mood_rating !== null && (
@@ -209,58 +218,47 @@ export function EntryView({ entry }: EntryViewProps) {
                       Теги
                     </Text>
                     <Group gap="xs" style={{ flexWrap: 'wrap' }}>
-                      {entry.tags.map((tag, idx) => (
-                        <Badge
-                          key={idx}
-                          variant="light"
-                          radius="sm"
-                          leftSection={<IconHash size={10} />}
-                          style={{
-                            backgroundColor: 'var(--theme-hover)',
-                            color: 'var(--theme-text-secondary)',
-                            border: 'none',
-                            fontWeight: 400,
-                            fontSize: '11px',
-                            padding: '4px 8px',
-                          }}
-                        >
-                          {tag}
-                        </Badge>
-                      ))}
+                      {entry.tags.map((tag, idx) => {
+                        const isHighlighted = shouldHighlightTag(tag, searchQuery || '')
+                        return (
+                          <Badge
+                            key={idx}
+                            variant="light"
+                            radius="sm"
+                            leftSection={<IconHash size={10} />}
+                            onClick={() => onTagClick && onTagClick(tag)}
+                            style={{
+                              backgroundColor: isHighlighted ? 'var(--theme-primary)' : 'var(--theme-hover)',
+                              color: isHighlighted ? 'var(--theme-bg)' : 'var(--theme-text-secondary)',
+                              border: isHighlighted ? '1px solid var(--theme-primary)' : 'none',
+                              fontWeight: isHighlighted ? 500 : 400,
+                              fontSize: '11px',
+                              padding: '4px 8px',
+                              cursor: onTagClick ? 'pointer' : 'default',
+                              transition: 'all 0.2s ease',
+                            }}
+                            onMouseEnter={(e) => {
+                              if (onTagClick && !isHighlighted) {
+                                e.currentTarget.style.backgroundColor = 'var(--theme-primary)'
+                                e.currentTarget.style.color = 'var(--theme-bg)'
+                              }
+                            }}
+                            onMouseLeave={(e) => {
+                              if (onTagClick && !isHighlighted) {
+                                e.currentTarget.style.backgroundColor = 'var(--theme-hover)'
+                                e.currentTarget.style.color = 'var(--theme-text-secondary)'
+                              }
+                            }}
+                          >
+                            {tag}
+                          </Badge>
+                        )
+                      })}
                     </Group>
                   </Box>
                 </>
               )}
 
-              {/* AI processed */}
-              {entry.ai_processed_at && (
-                <>
-                  <Divider style={{ borderColor: '#eee' }} />
-                  <Box>
-                    <Text
-                      size="xs"
-                      style={{
-                        color: 'var(--theme-text-secondary)',
-                        fontWeight: 400,
-                        marginBottom: '8px',
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.5px',
-                      }}
-                    >
-                      Обработано AI
-                    </Text>
-                    <Text
-                      size="sm"
-                      style={{
-                        color: 'var(--theme-text)',
-                        fontWeight: 400,
-                      }}
-                    >
-                      {formatDate(entry.ai_processed_at)}
-                    </Text>
-                  </Box>
-                </>
-              )}
             </Stack>
           </>
         )}

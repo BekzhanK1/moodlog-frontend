@@ -141,6 +141,7 @@ export function Navbar({ userPicture, onMenuClick }: NavbarProps) {
               <Menu.Divider style={{ borderColor: 'var(--theme-border)' }} />
               <Menu.Item
                 leftSection={<IconUser size={16} />}
+                onClick={() => navigate('/profile')}
                 style={{
                   fontSize: '14px',
                   color: 'var(--theme-text)',

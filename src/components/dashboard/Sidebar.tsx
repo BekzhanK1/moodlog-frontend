@@ -23,6 +23,7 @@ import {
   IconX,
 } from '@tabler/icons-react'
 import { EntryResponse } from '../../utils/api'
+import { highlightText, shouldHighlightTag } from '../../utils/highlight'
 
 interface SidebarProps {
   entries: EntryResponse[]
@@ -31,6 +32,8 @@ interface SidebarProps {
   onLoadMore: () => void
   onNewEntry: () => void
   onEntryClick: (entry: EntryResponse) => void
+  onSearch?: (query: string) => void
+  searchQuery?: string
   opened?: boolean
   onClose?: () => void
   selectedEntryId?: string | null
@@ -43,6 +46,8 @@ export function Sidebar({
   onLoadMore,
   onNewEntry,
   onEntryClick,
+  onSearch,
+  searchQuery = '',
   opened,
   onClose,
   selectedEntryId,
@@ -50,9 +55,16 @@ export function Sidebar({
   const isMobile = useMediaQuery('(max-width: 768px)')
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [isSearchFocused, setIsSearchFocused] = useState(false)
+  const [searchValue, setSearchValue] = useState(searchQuery)
   const scrollAreaRef = useRef<HTMLDivElement>(null)
   const observerRef = useRef<IntersectionObserver | null>(null)
   const loadMoreRef = useRef<HTMLDivElement>(null)
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+
+  // Sync searchValue with searchQuery prop
+  useEffect(() => {
+    setSearchValue(searchQuery)
+  }, [searchQuery])
 
   // On mobile, close sidebar when entry is clicked
   const handleEntryClick = (entry: EntryResponse) => {
@@ -190,7 +202,48 @@ export function Sidebar({
           </Button>
 
           <TextInput
-            placeholder="Поиск"
+            placeholder="Поиск или #тег"
+            value={searchValue}
+            onChange={(e) => {
+              const value = e.currentTarget.value
+              setSearchValue(value)
+              
+              // Clear timeout if exists
+              if (searchTimeoutRef.current) {
+                clearTimeout(searchTimeoutRef.current)
+              }
+              
+              // If empty, clear search immediately
+              if (!value.trim()) {
+                if (onSearch) {
+                  onSearch('')
+                }
+              } else {
+                // Debounce search - wait 500ms after user stops typing
+                searchTimeoutRef.current = setTimeout(() => {
+                  if (onSearch) {
+                    onSearch(value)
+                  }
+                }, 500)
+              }
+            }}
+            rightSection={
+              searchValue ? (
+                <IconX
+                  size={16}
+                  style={{
+                    color: 'var(--theme-text-secondary)',
+                    cursor: 'pointer',
+                  }}
+                  onClick={() => {
+                    setSearchValue('')
+                    if (onSearch) {
+                      onSearch('')
+                    }
+                  }}
+                />
+              ) : null
+            }
             leftSection={
               <IconSearch 
                 size={isMobile ? 18 : 16} 
@@ -274,7 +327,9 @@ export function Sidebar({
                         marginBottom: '4px',
                       }}
                     >
-                      {entry.title}
+                      {searchQuery && !searchQuery.startsWith('#')
+                        ? highlightText(entry.title, searchQuery, false)
+                        : entry.title}
                     </Text>
                   ) : null}
 
@@ -286,32 +341,38 @@ export function Sidebar({
                       lineHeight: 1.5,
                     }}
                   >
-                    {truncateContent(entry.content, isMobile ? 40 : 50)}
+                    {searchQuery && !searchQuery.startsWith('#')
+                      ? highlightText(truncateContent(entry.content, isMobile ? 40 : 50), searchQuery, false)
+                      : truncateContent(entry.content, isMobile ? 40 : 50)}
                   </Text>
 
                   {/* Tags and mood rating */}
                   <Group gap="xs" justify="space-between" align="flex-end">
                     <Group gap="xs" style={{ flexWrap: 'wrap', flex: 1 }}>
                       {entry.tags && entry.tags.length > 0 ? (
-                        entry.tags.slice(0, isMobile ? 2 : 3).map((tag, idx) => (
-                          <Badge
-                            key={idx}
-                            variant="light"
-                            radius="sm"
-                            leftSection={<IconHash size={8} />}
-                            style={{
-                              backgroundColor: 'var(--theme-hover)',
-                              color: 'var(--theme-text-secondary)',
-                              border: 'none',
-                              fontWeight: 400,
-                              fontSize: isMobile ? '8px' : '9px',
-                              padding: '1px 4px',
-                              lineHeight: 1.2,
-                            }}
-                          >
-                            {tag}
-                          </Badge>
-                        ))
+                        entry.tags.slice(0, isMobile ? 2 : 3).map((tag, idx) => {
+                          const isHighlighted = shouldHighlightTag(tag, searchQuery)
+                          return (
+                            <Badge
+                              key={idx}
+                              variant="light"
+                              radius="sm"
+                              leftSection={<IconHash size={8} />}
+                              style={{
+                                backgroundColor: isHighlighted ? 'var(--theme-primary)' : 'var(--theme-hover)',
+                                color: isHighlighted ? 'var(--theme-bg)' : 'var(--theme-text-secondary)',
+                                border: isHighlighted ? '1px solid var(--theme-primary)' : 'none',
+                                fontWeight: isHighlighted ? 500 : 400,
+                                fontSize: isMobile ? '8px' : '9px',
+                                padding: '1px 4px',
+                                lineHeight: 1.2,
+                                transition: 'all 0.2s ease',
+                              }}
+                            >
+                              {tag}
+                            </Badge>
+                          )
+                        })
                       ) : null}
                     </Group>
 

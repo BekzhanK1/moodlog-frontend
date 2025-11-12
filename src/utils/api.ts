@@ -50,6 +50,13 @@ export interface EntryCreateRequest {
   is_draft?: boolean
 }
 
+export interface EntryUpdateRequest {
+  title?: string | null
+  content?: string | null
+  tags?: string[] | null
+  is_draft?: boolean
+}
+
 class ApiClient {
   private baseUrl: string
 
@@ -183,6 +190,17 @@ class ApiClient {
 
   async getEntryById(id: string): Promise<EntryResponse> {
     return this.request<EntryResponse>(`/entries/${id}`)
+  }
+
+  async updateEntry(id: string, entryData: EntryUpdateRequest): Promise<EntryResponse> {
+    return this.request<EntryResponse>(`/entries/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(entryData),
+    })
+  }
+
+  async searchEntries(query: string, page: number = 1, perPage: number = 10): Promise<EntryListResponse> {
+    return this.request<EntryListResponse>(`/entries/search?q=${encodeURIComponent(query)}&page=${page}&per_page=${perPage}`)
   }
 }
 

@@ -1,4 +1,5 @@
 import { useState, forwardRef, useImperativeHandle } from 'react'
+import * as React from 'react'
 import { Box, TextInput, Textarea, Stack, Button, Group, Divider, Text } from '@mantine/core'
 import { useMediaQuery } from '@mantine/hooks'
 
@@ -6,6 +7,7 @@ export interface NewEntryEditorHandle {
   getTitle: () => string
   getContent: () => string
   reset: () => void
+  setInitialValues: (title: string, content: string) => void
 }
 
 interface NewEntryEditorProps {
@@ -13,13 +15,30 @@ interface NewEntryEditorProps {
   onSave?: () => void
   isSaving?: boolean
   wordCount?: number
+  initialTitle?: string
+  initialContent?: string
+  buttonText?: string
 }
 
 export const NewEntryEditor = forwardRef<NewEntryEditorHandle, NewEntryEditorProps>(
-  function NewEntryEditor({ onContentChange, onSave, isSaving = false, wordCount = 0 }, ref) {
+  function NewEntryEditor({ 
+    onContentChange, 
+    onSave, 
+    isSaving = false, 
+    wordCount = 0,
+    initialTitle = '',
+    initialContent = '',
+    buttonText = 'Сохранить',
+  }, ref) {
     const isMobile = useMediaQuery('(max-width: 768px)')
-    const [title, setTitle] = useState('')
-    const [content, setContent] = useState('')
+    const [title, setTitle] = useState(initialTitle)
+    const [content, setContent] = useState(initialContent)
+
+    // Update state when initial values change
+    React.useEffect(() => {
+      setTitle(initialTitle)
+      setContent(initialContent)
+    }, [initialTitle, initialContent])
 
     useImperativeHandle(ref, () => ({
       getTitle: () => title,
@@ -27,6 +46,10 @@ export const NewEntryEditor = forwardRef<NewEntryEditorHandle, NewEntryEditorPro
       reset: () => {
         setTitle('')
         setContent('')
+      },
+      setInitialValues: (newTitle: string, newContent: string) => {
+        setTitle(newTitle)
+        setContent(newContent)
       },
     }))
 
@@ -211,7 +234,7 @@ export const NewEntryEditor = forwardRef<NewEntryEditorHandle, NewEntryEditorPro
                 }
               }}
             >
-              Сохранить
+              {buttonText}
             </Button>
           </Group>
         </Stack>
