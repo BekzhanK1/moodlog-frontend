@@ -722,7 +722,7 @@ function LandingPage() {
               letterSpacing: '1px',
             }}
           >
-            © 2024 MoodLog
+            © 2025 MoodLog
           </Text>
         </Container>
       </Box>
