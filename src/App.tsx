@@ -8,6 +8,7 @@ import { DashboardPage } from './pages/DashboardPage'
 import { SettingsPage } from './pages/SettingsPage'
 import { ProfilePage } from './pages/ProfilePage'
 import { AnalyticsPage } from './pages/AnalyticsPage'
+import { TutorialPage } from './pages/TutorialPage'
 import { AuthProvider } from './contexts/AuthContext'
 import { ThemeProvider, useTheme } from './contexts/ThemeContext'
 
@@ -27,6 +28,7 @@ function AppContent() {
             <Route path="/analytics" element={<AnalyticsPage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/tutorial" element={<TutorialPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </AuthProvider>

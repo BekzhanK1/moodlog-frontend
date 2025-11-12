@@ -1,6 +1,6 @@
 import { Box, Group, Text, ActionIcon, Avatar, Menu, Button } from '@mantine/core'
 import { useMediaQuery } from '@mantine/hooks'
-import { IconSettings, IconMenu2, IconUser, IconLogout, IconHome } from '@tabler/icons-react'
+import { IconSettings, IconMenu2, IconUser, IconLogout, IconHome, IconBook } from '@tabler/icons-react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 
@@ -182,6 +182,24 @@ export function Navbar({ userPicture, onMenuClick }: NavbarProps) {
                 }}
               >
                 Профиль
+              </Menu.Item>
+              <Menu.Item
+                leftSection={<IconBook size={16} />}
+                onClick={() => navigate('/tutorial')}
+                style={{
+                  fontSize: '14px',
+                  color: 'var(--theme-text)',
+                  fontWeight: 400,
+                  padding: '8px 12px',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = 'var(--theme-hover)'
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent'
+                }}
+              >
+                Руководство
               </Menu.Item>
               <Menu.Divider style={{ borderColor: 'var(--theme-border)' }} />
               <Menu.Item
