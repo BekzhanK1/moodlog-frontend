@@ -1,6 +1,6 @@
 import { Box, Text, Stack, Group, Badge, Divider, Button, Modal, TextInput } from '@mantine/core'
 import { useMediaQuery } from '@mantine/hooks'
-import { IconHash, IconPencil, IconTrash } from '@tabler/icons-react'
+import { IconHash, IconPencil, IconTrash, IconX } from '@tabler/icons-react'
 import { EntryResponse } from '../../utils/api'
 import { highlightText, shouldHighlightTag } from '../../utils/highlight'
 import { useState } from 'react'
@@ -10,10 +10,11 @@ interface EntryViewProps {
   onEdit?: () => void
   onDelete?: () => void
   onTagClick?: (tag: string) => void
+  onClose?: () => void
   searchQuery?: string
 }
 
-export function EntryView({ entry, onEdit, onDelete, onTagClick, searchQuery }: EntryViewProps) {
+export function EntryView({ entry, onEdit, onDelete, onTagClick, onClose, searchQuery }: EntryViewProps) {
   const isMobile = useMediaQuery('(max-width: 768px)')
   const [deleteModalOpened, setDeleteModalOpened] = useState(false)
   const [deleteConfirmText, setDeleteConfirmText] = useState('')
@@ -84,39 +85,32 @@ export function EntryView({ entry, onEdit, onDelete, onTagClick, searchQuery }: 
       }}
     >
       <Stack gap={isMobile ? 'md' : 'lg'}>
-        {/* Header with Edit button */}
-        <Group justify="space-between" align="flex-start">
-          <Stack gap="xs" style={{ flex: 1 }}>
-            {/* Title */}
-            {entry.title && (
-              <Text
+        {/* Header with buttons */}
+        <Group justify="flex-end" align="center">
+          {/* Close, Edit and Delete buttons */}
+          <Group gap="xs">
+            {onClose && (
+              <Button
+                variant="subtle"
+                leftSection={<IconX size={16} />}
+                size={isMobile ? 'sm' : 'md'}
+                onClick={onClose}
+                radius="md"
                 style={{
-                  fontSize: isMobile ? '24px' : '32px',
-                  fontWeight: 400,
                   color: 'var(--theme-text)',
-                  lineHeight: 1.3,
+                  backgroundColor: 'transparent',
+                  border: '1px solid var(--theme-border)',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = 'var(--theme-hover)'
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent'
                 }}
               >
-                {searchQuery && !searchQuery.startsWith('#')
-                  ? highlightText(entry.title, searchQuery, false)
-                  : entry.title}
-              </Text>
+                Закрыть
+              </Button>
             )}
-
-            {/* Date */}
-            <Text
-              size={isMobile ? 'xs' : 'sm'}
-              style={{
-                color: 'var(--theme-text-secondary)',
-                fontWeight: 400,
-              }}
-            >
-              {formatDate(entry.created_at)}
-            </Text>
-          </Stack>
-
-          {/* Edit and Delete buttons */}
-          <Group gap="xs">
             {onEdit && (
               <Button
                 leftSection={<IconPencil size={16} />}
@@ -163,6 +157,37 @@ export function EntryView({ entry, onEdit, onDelete, onTagClick, searchQuery }: 
             )}
           </Group>
         </Group>
+
+        {/* Title and Date */}
+        <Stack gap="xs">
+          {/* Title */}
+          {entry.title && (
+            <Text
+              style={{
+                fontSize: isMobile ? '24px' : '32px',
+                fontWeight: 400,
+                color: 'var(--theme-text)',
+                lineHeight: 1.3,
+                wordBreak: 'break-word',
+              }}
+            >
+              {searchQuery && !searchQuery.startsWith('#')
+                ? highlightText(entry.title, searchQuery, false)
+                : entry.title}
+            </Text>
+          )}
+
+          {/* Date */}
+          <Text
+            size={isMobile ? 'xs' : 'sm'}
+            style={{
+              color: 'var(--theme-text-secondary)',
+              fontWeight: 400,
+            }}
+          >
+            {formatDate(entry.created_at)}
+          </Text>
+        </Stack>
 
         {/* Content */}
         <Text

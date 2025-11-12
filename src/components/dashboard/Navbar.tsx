@@ -1,6 +1,6 @@
-import { Box, Group, Text, ActionIcon, Avatar, Menu } from '@mantine/core'
+import { Box, Group, Text, ActionIcon, Avatar, Menu, Button } from '@mantine/core'
 import { useMediaQuery } from '@mantine/hooks'
-import { IconSettings, IconMenu2, IconUser, IconLogout } from '@tabler/icons-react'
+import { IconSettings, IconMenu2, IconUser, IconLogout, IconHome } from '@tabler/icons-react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 
@@ -45,12 +45,20 @@ export function Navbar({ userPicture, onMenuClick }: NavbarProps) {
             </ActionIcon>
           )}
           <Text
+            onClick={() => navigate('/')}
             style={{
               fontSize: isMobile ? '16px' : '20px',
               fontWeight: 400,
               letterSpacing: isMobile ? '2px' : '4px',
               color: 'var(--theme-text)',
               textTransform: 'uppercase',
+              cursor: 'pointer',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.opacity = '0.7'
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.opacity = '1'
             }}
           >
             MoodLog
@@ -58,6 +66,24 @@ export function Navbar({ userPicture, onMenuClick }: NavbarProps) {
         </Group>
 
         <Group gap={isMobile ? 'xs' : 'md'}>
+          <Button
+            variant="subtle"
+            leftSection={<IconHome size={16} />}
+            onClick={() => navigate('/dashboard')}
+            size="sm"
+            style={{
+              color: 'var(--theme-text)',
+              backgroundColor: 'transparent',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = 'var(--theme-hover)'
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'transparent'
+            }}
+          >
+            {isMobile ? '' : 'Главная'}
+          </Button>
           <ActionIcon
             variant="subtle"
             radius="md"

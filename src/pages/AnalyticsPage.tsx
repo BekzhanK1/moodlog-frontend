@@ -1,6 +1,7 @@
-import { Box, Text, Stack, Card, Group, Grid } from '@mantine/core'
+import { Box, Text, Stack, Group, Grid, Button } from '@mantine/core'
 import { useMediaQuery } from '@mantine/hooks'
 import { useNavigate } from 'react-router-dom'
+import { IconArrowLeft } from '@tabler/icons-react'
 import { Navbar } from '../components/dashboard/Navbar'
 import { useAuth } from '../contexts/AuthContext'
 import { useEffect } from 'react'
@@ -10,6 +11,7 @@ import { GeneralMoodCard } from '../components/analytics/GeneralMoodCard'
 import { KeyMomentsCard } from '../components/analytics/KeyMomentsCard'
 import { ThemesCard } from '../components/analytics/ThemesCard'
 import { MonthlySummaryCard } from '../components/analytics/MonthlySummaryCard'
+import { WeeklySummaryCard } from '../components/analytics/WeeklySummaryCard'
 
 export function AnalyticsPage() {
   const navigate = useNavigate()
@@ -58,53 +60,73 @@ export function AnalyticsPage() {
         style={{
           flex: 1,
           padding: isMobile ? '20px 16px' : '40px',
-          maxWidth: '1200px',
+          maxWidth: '1400px',
           margin: '0 auto',
           width: '100%',
         }}
       >
         <Stack gap="xl">
           {/* Header */}
-          <Text
-            style={{
-              fontSize: isMobile ? '28px' : '36px',
-              fontWeight: 400,
-              color: 'var(--theme-text)',
-              marginBottom: '8px',
-            }}
-          >
-            Аналитика
-          </Text>
+          <Group gap="md" align="center" wrap="wrap">
+            <Button
+              variant="subtle"
+              leftSection={<IconArrowLeft size={18} />}
+              onClick={() => navigate('/dashboard')}
+              style={{
+                color: 'var(--theme-text)',
+                backgroundColor: 'transparent',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = 'var(--theme-hover)'
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'transparent'
+              }}
+            >
+              Назад
+            </Button>
+            <Text
+              style={{
+                fontSize: isMobile ? '28px' : '36px',
+                fontWeight: 400,
+                color: 'var(--theme-text)',
+              }}
+            >
+              Аналитика
+            </Text>
+          </Group>
 
           {/* Analytics Cards */}
           <Grid gutter={isMobile ? 'md' : 'lg'}>
-            {/* General Mood Card */}
-            <Grid.Col span={isMobile ? 12 : 6}>
+            {/* First Row: General Mood takes full width */}
+            <Grid.Col span={12}>
               <GeneralMoodCard />
             </Grid.Col>
 
-            {/* Mood Calendar */}
+            {/* Second Row: Calendar and Graph side by side */}
             <Grid.Col span={isMobile ? 12 : 6}>
               <MoodCalendar />
             </Grid.Col>
 
-            {/* Mood Trend Graph */}
-            <Grid.Col span={12}>
+            <Grid.Col span={isMobile ? 12 : 6}>
               <MoodTrendGraph />
             </Grid.Col>
 
-            {/* Key Moments */}
+            {/* Third Row: Key Moments and Themes side by side */}
             <Grid.Col span={isMobile ? 12 : 6}>
               <KeyMomentsCard />
             </Grid.Col>
 
-            {/* Themes and Triggers */}
             <Grid.Col span={isMobile ? 12 : 6}>
               <ThemesCard />
             </Grid.Col>
 
-            {/* Monthly Summary */}
-            <Grid.Col span={12}>
+            {/* Fourth Row: Weekly and Monthly Summaries side by side */}
+            <Grid.Col span={isMobile ? 12 : 6}>
+              <WeeklySummaryCard />
+            </Grid.Col>
+
+            <Grid.Col span={isMobile ? 12 : 6}>
               <MonthlySummaryCard />
             </Grid.Col>
           </Grid>

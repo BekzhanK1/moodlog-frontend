@@ -532,7 +532,11 @@ export function DashboardPage() {
                 entry={selectedEntry} 
                 onEdit={handleEditEntry} 
                 onDelete={handleDeleteEntry}
-                onTagClick={handleTagClick} 
+                onTagClick={handleTagClick}
+                onClose={() => {
+                  setSelectedEntry(null)
+                  setSearchParams({})
+                }}
                 searchQuery={searchQuery} 
               />
             </Box>

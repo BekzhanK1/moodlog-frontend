@@ -4,12 +4,18 @@ import { IconBrain, IconTrendingUp, IconSparkles, IconBulb, IconChevronLeft, Ico
 import { useEffect, useState } from 'react'
 import { apiClient } from '../../utils/api'
 
-const monthNames = [
-  'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
-  'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'
-]
+// Функция для получения ISO недели из даты
+function getISOWeek(date: Date): { year: number; week: number } {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()))
+  const dayNum = d.getUTCDay() || 7
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum)
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1))
+  const weekNo = Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7)
+  return { year: d.getUTCFullYear(), week: weekNo }
+}
 
-interface MonthlyInsight {
+
+interface WeeklyInsight {
   period: {
     type: string
     label: string
@@ -35,29 +41,30 @@ interface MonthlyInsight {
   }
 }
 
-export function MonthlySummaryCard() {
+export function WeeklySummaryCard() {
   const isMobile = useMediaQuery('(max-width: 768px)')
-  const [insight, setInsight] = useState<MonthlyInsight | null>(null)
+  const [insight, setInsight] = useState<WeeklyInsight | null>(null)
   const [loading, setLoading] = useState(true)
   const [generating, setGenerating] = useState(false)
   const [error, setError] = useState<string | null>(null)
   
-  // Состояние для текущего месяца
+  // Состояние для текущей недели
   const now = new Date()
-  const [currentYear, setCurrentYear] = useState(now.getFullYear())
-  const [currentMonth, setCurrentMonth] = useState(now.getMonth() + 1)
+  const currentISO = getISOWeek(now)
+  const [currentYear, setCurrentYear] = useState(currentISO.year)
+  const [currentWeek, setCurrentWeek] = useState(currentISO.week)
 
-  // Проверка, является ли выбранный месяц текущим
-  const isCurrentMonth = () => {
-    const now = new Date()
-    return currentYear === now.getFullYear() && currentMonth === now.getMonth() + 1
+  // Проверка, является ли выбранная неделя текущей
+  const isCurrentWeek = () => {
+    const nowISO = getISOWeek(new Date())
+    return currentYear === nowISO.year && currentWeek === nowISO.week
   }
 
-  // Проверка, является ли выбранный месяц прошлым
-  const isPastMonth = () => {
-    const now = new Date()
-    if (currentYear < now.getFullYear()) return true
-    if (currentYear === now.getFullYear() && currentMonth < now.getMonth() + 1) return true
+  // Проверка, является ли выбранная неделя прошлой
+  const isPastWeek = () => {
+    const nowISO = getISOWeek(new Date())
+    if (currentYear < nowISO.year) return true
+    if (currentYear === nowISO.year && currentWeek < nowISO.week) return true
     return false
   }
 
@@ -67,21 +74,20 @@ export function MonthlySummaryCard() {
       setInsight(null)
       setError(null)
       try {
-        const result = await apiClient.getMonthlyInsights(currentYear, currentMonth)
+        const result = await apiClient.getWeeklyInsights(currentYear, currentWeek)
         
         if (result && result.content) {
           // Parse JSON content if it's a string
           try {
-            const parsedContent: MonthlyInsight = typeof result.content === 'string' ? JSON.parse(result.content) : result.content
+            const parsedContent: WeeklyInsight = typeof result.content === 'string' ? JSON.parse(result.content) : result.content
             setInsight(parsedContent)
           } catch {
             // If parsing fails, treat as plain text
-            const periodLabel = (result as any).period_label || `${monthNames[currentMonth - 1]} ${currentYear}`
             setInsight({
               period: {
-                type: 'monthly',
-                label: periodLabel,
-                key: result.period_key || `${currentYear}-${String(currentMonth).padStart(2, '0')}`
+                type: 'weekly',
+                label: result.period_label || `Неделя ${currentWeek}, ${currentYear}`,
+                key: result.period_key || `${currentYear}-W${String(currentWeek).padStart(2, '0')}`
               },
               language: 'русский',
               overview: result.content,
@@ -99,56 +105,60 @@ export function MonthlySummaryCard() {
       }
     }
     fetchExistingInsight()
-  }, [currentYear, currentMonth])
+  }, [currentYear, currentWeek])
 
   const handlePrevious = () => {
-    if (currentMonth > 1) {
-      setCurrentMonth(currentMonth - 1)
+    if (currentWeek > 1) {
+      setCurrentWeek(currentWeek - 1)
     } else {
       setCurrentYear(currentYear - 1)
-      setCurrentMonth(12)
+      // Последняя неделя года может быть 52 или 53
+      setCurrentWeek(53) // Попробуем 53, если не будет данных, пользователь увидит пустую сводку
     }
   }
 
   const handleNext = () => {
-    // Нельзя переходить к будущим месяцам
-    if (isCurrentMonth()) {
+    // Нельзя переходить к будущим неделям
+    if (isPastWeek() || !isCurrentWeek()) {
+      return
+    }
+    // Если мы на текущей неделе, нельзя идти вперед
+    if (isCurrentWeek()) {
       return
     }
   }
 
-  const handleCurrentMonth = () => {
-    const now = new Date()
-    setCurrentYear(now.getFullYear())
-    setCurrentMonth(now.getMonth() + 1)
+  const handleCurrentWeek = () => {
+    const nowISO = getISOWeek(new Date())
+    setCurrentYear(nowISO.year)
+    setCurrentWeek(nowISO.week)
   }
 
-  const getMonthLabel = () => {
-    return `${monthNames[currentMonth - 1]} ${currentYear}`
+  const getWeekLabel = () => {
+    return `Неделя ${currentWeek}, ${currentYear}`
   }
 
   const generateInsights = async () => {
-    if (!isCurrentMonth()) {
-      setError('Нельзя генерировать сводку для прошлых месяцев')
+    if (!isCurrentWeek()) {
+      setError('Нельзя генерировать сводку для прошлых недель')
       return
     }
     setGenerating(true)
     setError(null)
     try {
-      const result = await apiClient.generateMonthlyInsights(currentYear, currentMonth)
+      const result = await apiClient.generateWeeklyInsights(currentYear, currentWeek)
       
       // Parse JSON content if it's a string
-      let parsedContent: MonthlyInsight
+      let parsedContent: WeeklyInsight
       try {
         parsedContent = typeof result.content === 'string' ? JSON.parse(result.content) : result.content
       } catch {
         // If parsing fails, treat as plain text
-        const periodLabel = (result as any).period_label || `${monthNames[currentMonth - 1]} ${currentYear}`
         setInsight({
           period: {
-            type: 'monthly',
-            label: periodLabel,
-            key: result.period_key || `${currentYear}-${String(currentMonth).padStart(2, '0')}`
+            type: 'weekly',
+            label: result.period_label || `Неделя ${currentWeek}, ${currentYear}`,
+            key: result.period_key || `${currentYear}-W${String(currentWeek).padStart(2, '0')}`
           },
           language: 'русский',
           overview: result.content,
@@ -174,22 +184,24 @@ export function MonthlySummaryCard() {
     }
   }
 
-  // Проверка, можно ли создавать сводку (только в последние 5 дней месяца и только для текущего месяца)
+  // Проверка, можно ли создавать сводку (только в последние 2 дня недели и только для текущей недели)
   const canGenerateSummary = () => {
-    if (!isCurrentMonth()) return false
+    if (!isCurrentWeek()) return false
     const now = new Date()
-    const currentDay = now.getDate()
-    const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
-    return currentDay >= lastDayOfMonth - 4 // Последние 5 дней (включая сегодня)
+    const dayOfWeek = now.getDay() // 0 = Sunday, 6 = Saturday
+    // Можно создавать в субботу (6) и воскресенье (0)
+    return dayOfWeek === 0 || dayOfWeek === 6
   }
 
   const getDaysUntilSummaryAvailable = () => {
-    if (!isCurrentMonth()) return 0
+    if (!isCurrentWeek()) return 0
     const now = new Date()
-    const currentDay = now.getDate()
-    const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
-    const daysUntil = (lastDayOfMonth - 4) - currentDay
-    return daysUntil > 0 ? daysUntil : 0
+    const dayOfWeek = now.getDay() // 0 = Sunday, 6 = Saturday
+    // Если сегодня понедельник (1), то до субботы 5 дней
+    // Если вторник (2), то 4 дня и т.д.
+    if (dayOfWeek === 0) return 0 // Воскресенье - можно создавать
+    if (dayOfWeek === 6) return 0 // Суббота - можно создавать
+    return 6 - dayOfWeek // Осталось дней до субботы
   }
 
   const formatDate = (dateString: string) => {
@@ -218,7 +230,7 @@ export function MonthlySummaryCard() {
               color: 'var(--theme-text)',
             }}
           >
-            Ежемесячная сводка от ИИ
+            Еженедельная сводка от ИИ
           </Text>
           <Group gap="xs" wrap="nowrap">
             <ActionIcon
@@ -231,17 +243,17 @@ export function MonthlySummaryCard() {
             >
               <IconChevronLeft size={16} />
             </ActionIcon>
-            <Text style={{ color: 'var(--theme-text)', minWidth: isMobile ? '140px' : '180px', textAlign: 'center', fontSize: isMobile ? '13px' : '14px' }}>
-              {getMonthLabel()}
+            <Text style={{ color: 'var(--theme-text)', minWidth: isMobile ? '120px' : '150px', textAlign: 'center', fontSize: isMobile ? '13px' : '14px' }}>
+              {getWeekLabel()}
             </Text>
             <ActionIcon
               variant="subtle"
               size="sm"
               onClick={handleNext}
-              disabled={isCurrentMonth()}
+              disabled={isCurrentWeek()}
               style={{
-                color: isCurrentMonth() ? 'var(--theme-text-secondary)' : 'var(--theme-text)',
-                cursor: isCurrentMonth() ? 'not-allowed' : 'pointer',
+                color: isCurrentWeek() ? 'var(--theme-text-secondary)' : 'var(--theme-text)',
+                cursor: isCurrentWeek() ? 'not-allowed' : 'pointer',
               }}
             >
               <IconChevronRight size={16} />
@@ -250,7 +262,7 @@ export function MonthlySummaryCard() {
               variant="subtle"
               size="sm"
               leftSection={<IconCalendar size={14} />}
-              onClick={handleCurrentMonth}
+              onClick={handleCurrentWeek}
               style={{
                 color: 'var(--theme-text)',
               }}
@@ -271,17 +283,17 @@ export function MonthlySummaryCard() {
             <Group gap="xs" align="center" mb="md">
               <IconBrain size={18} style={{ color: 'var(--theme-text-secondary)' }} />
               <Text style={{ color: 'var(--theme-text)', fontSize: isMobile ? '14px' : '16px' }}>
-                {isPastMonth() ? `Сводка за ${getMonthLabel()} не найдена` : `Ваш ${monthNames[currentMonth - 1]} в одном абзаце:`}
+                {isPastWeek() ? `Сводка за ${getWeekLabel()} не найдена` : `Ваша ${getWeekLabel()} в одном абзаце:`}
               </Text>
             </Group>
-            {isPastMonth() ? (
+            {isPastWeek() ? (
               <Text
                 style={{
                   color: 'var(--theme-text-secondary)',
                   fontSize: isMobile ? '14px' : '16px',
                 }}
               >
-                Нельзя генерировать сводку для прошлых месяцев. Используйте навигацию для просмотра существующих сводок.
+                Нельзя генерировать сводку для прошлых недель. Используйте навигацию для просмотра существующих сводок.
               </Text>
             ) : canGenerateSummary() ? (
               <>
@@ -292,7 +304,7 @@ export function MonthlySummaryCard() {
                     marginBottom: '16px',
                   }}
                 >
-                  Сводка за этот месяц еще не создана. Нажмите кнопку ниже, чтобы сгенерировать её.
+                  Сводка за эту неделю еще не создана. Нажмите кнопку ниже, чтобы сгенерировать её.
                 </Text>
                 <Button
                   onClick={generateInsights}
@@ -315,7 +327,7 @@ export function MonthlySummaryCard() {
                     marginBottom: '12px',
                   }}
                 >
-                  Сводка за этот месяц еще не создана.
+                  Сводка за эту неделю еще не создана.
                 </Text>
                 <Box
                   style={{
@@ -333,7 +345,7 @@ export function MonthlySummaryCard() {
                       lineHeight: 1.6,
                     }}
                   >
-                    Ежемесячную сводку можно создать только в последние 5 дней месяца. 
+                    Еженедельную сводку можно создать только в выходные дни (суббота или воскресенье). 
                     {getDaysUntilSummaryAvailable() > 0 && (
                       <> Осталось {getDaysUntilSummaryAvailable()} {getDaysUntilSummaryAvailable() === 1 ? 'день' : getDaysUntilSummaryAvailable() < 5 ? 'дня' : 'дней'} до возможности создания сводки.</>
                     )}
@@ -599,3 +611,4 @@ export function MonthlySummaryCard() {
     </Card>
   )
 }
+

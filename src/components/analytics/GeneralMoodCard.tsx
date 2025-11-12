@@ -1,4 +1,4 @@
-import { Card, Text, Stack, Group, Box } from '@mantine/core'
+import { Card, Text, Stack, Group } from '@mantine/core'
 import { useMediaQuery } from '@mantine/hooks'
 import { IconMoodSmile, IconArrowUp, IconArrowRight } from '@tabler/icons-react'
 import { useEffect, useState } from 'react'
@@ -122,13 +122,34 @@ export function GeneralMoodCard() {
 
           <Group gap="xs" align="center">
             <IconArrowRight size={18} style={{ color: 'var(--theme-text-secondary)' }} />
-            <Text style={{ color: 'var(--theme-text-secondary)', fontSize: isMobile ? '14px' : '16px' }}>
-              {data.mood_rating_difference !== null && data.mood_rating_difference > 0
-                ? 'Вы стали чаще замечать светлые моменты.'
-                : data.mood_rating_difference !== null && data.mood_rating_difference < 0
-                ? 'Ваше настроение немного снизилось.'
-                : 'Ваше настроение стабильно.'}
-            </Text>
+            {(() => {
+              const diff = data.mood_rating_difference;
+              let message = '';
+
+              if (diff === null) {
+                message = 'Нет данных для сравнения с предыдущим месяцем.';
+              } else if (diff > 1) {
+                message = 'Сильный рост! Ваше настроение заметно улучшилось — вы чаще испытывали ярко-позитивные эмоции в этом месяце.';
+              } else if (diff > 0.5) {
+                message = 'Хороший прогресс: вы стали чаще отмечать светлые моменты и чувствовать себя лучше.';
+              } else if (diff > 0.1) {
+                message = 'Легкий подъём — настроение чуть улучшилось по сравнению с прошлым месяцем.';
+              } else if (diff > -0.1) {
+                message = 'Ваше настроение осталось примерно на том же уровне, что и в прошлом месяце.';
+              } else if (diff > -0.5) {
+                message = 'Есть небольшой спад: эмоциональный фон чуть снизился, но остаётся в стабильных пределах.';
+              } else if (diff > -1) {
+                message = 'Присутствует заметное снижение настроения. Постарайтесь уделить больше времени себе и заботе о своём благополучии.';
+              } else {
+                message = 'Сильное снижение — этот месяц выдался особенно сложным. Не бойтесь обратиться за поддержкой, позаботьтесь о себе.';
+              }
+
+              return (
+                <Text style={{ color: 'var(--theme-text-secondary)', fontSize: isMobile ? '14px' : '16px' }}>
+                  {message}
+                </Text>
+              );
+            })()}
           </Group>
         </Stack>
       </Stack>

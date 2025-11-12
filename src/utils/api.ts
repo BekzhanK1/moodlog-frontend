@@ -261,12 +261,12 @@ class ApiClient {
   }
 
   // Insights endpoints
-  async getMonthlyInsights(year?: number, month?: number): Promise<{ id: string; content: string; type: string; period_key: string; created_at: string } | null> {
+  async getMonthlyInsights(year?: number, month?: number): Promise<{ id: string; content: string; type: string; period_key: string; created_at: string; period_label?: string } | null> {
     const params = new URLSearchParams()
     if (year) params.append('year', year.toString())
     if (month) params.append('month', month.toString())
     try {
-      return await this.request<{ id: string; content: string; type: string; period_key: string; created_at: string }>(`/insights/monthly?${params.toString()}`)
+      return await this.request<{ id: string; content: string; type: string; period_key: string; created_at: string; period_label?: string }>(`/insights/monthly?${params.toString()}`)
     } catch (error: any) {
       if (error?.message?.includes('404')) {
         return null
@@ -275,11 +275,34 @@ class ApiClient {
     }
   }
 
-  async generateMonthlyInsights(year?: number, month?: number): Promise<{ id: string; content: string; type: string; period_key: string; created_at: string }> {
+  async generateMonthlyInsights(year?: number, month?: number): Promise<{ id: string; content: string; type: string; period_key: string; created_at: string; period_label?: string }> {
     const params = new URLSearchParams()
     if (year) params.append('year', year.toString())
     if (month) params.append('month', month.toString())
-    return this.request<{ id: string; content: string; type: string; period_key: string; created_at: string }>(`/insights/monthly?${params.toString()}`, {
+    return this.request<{ id: string; content: string; type: string; period_key: string; created_at: string; period_label?: string }>(`/insights/monthly?${params.toString()}`, {
+      method: 'POST',
+    })
+  }
+
+  async getWeeklyInsights(isoYear?: number, isoWeek?: number): Promise<{ id: string; content: string; type: string; period_key: string; created_at: string; period_label?: string } | null> {
+    const params = new URLSearchParams()
+    if (isoYear) params.append('iso_year', isoYear.toString())
+    if (isoWeek) params.append('iso_week', isoWeek.toString())
+    try {
+      return await this.request<{ id: string; content: string; type: string; period_key: string; created_at: string; period_label?: string }>(`/insights/weekly?${params.toString()}`)
+    } catch (error: any) {
+      if (error?.message?.includes('404')) {
+        return null
+      }
+      throw error
+    }
+  }
+
+  async generateWeeklyInsights(isoYear?: number, isoWeek?: number): Promise<{ id: string; content: string; type: string; period_key: string; created_at: string; period_label?: string }> {
+    const params = new URLSearchParams()
+    if (isoYear) params.append('iso_year', isoYear.toString())
+    if (isoWeek) params.append('iso_week', isoWeek.toString())
+    return this.request<{ id: string; content: string; type: string; period_key: string; created_at: string; period_label?: string }>(`/insights/weekly?${params.toString()}`, {
       method: 'POST',
     })
   }
