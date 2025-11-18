@@ -436,7 +436,7 @@ export function MoodTrendGraph() {
     : data
   
   // Для годового вида масштабируем по 12 месяцам, для остальных - по количеству точек
-  const totalPoints = viewType === 'year' ? 12 : data.length
+  // const totalPoints = viewType === 'year' ? 12 : data.length
   
   const points = pointsToRender.map((point, index) => {
     // Для годового вида вычисляем позицию на основе месяца

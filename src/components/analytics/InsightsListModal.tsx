@@ -1,4 +1,4 @@
-import { Modal, Text, Stack, Group, Box, Button, ScrollArea, Divider } from '@mantine/core'
+import { Modal, Text, Stack, Group, Box,ScrollArea } from '@mantine/core'
 import { useMediaQuery } from '@mantine/hooks'
 import { IconCalendar } from '@tabler/icons-react'
 import { useEffect, useState } from 'react'

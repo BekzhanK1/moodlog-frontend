@@ -172,14 +172,6 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         themeConfig.colors.text,
       ],
     },
-    defaultProps: {
-      styles: {
-        root: {
-          '--mantine-color-body': themeConfig.colors.background,
-          '--mantine-color-text': themeConfig.colors.text,
-        },
-      },
-    },
   })
 
   const setTheme = (theme: ThemeName) => {

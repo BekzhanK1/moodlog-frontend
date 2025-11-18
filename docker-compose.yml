@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8000/api/v1}
+    container_name: moodlog-frontend
+    ports:
+      - "${FRONTEND_PORT:-3000}:80"
+    networks:
+      - moodlog-frontend-network
+    restart: unless-stopped
+
+networks:
+  moodlog-frontend-network:
+    driver: bridge
+

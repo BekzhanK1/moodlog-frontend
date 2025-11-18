@@ -71,9 +71,9 @@ class ApiClient {
     const url = `${this.baseUrl}${endpoint}`
     const token = localStorage.getItem('access_token')
 
-    const headers: HeadersInit = {
+    const headers: Record<string, string> = {
       'Content-Type': 'application/json',
-      ...options.headers,
+      ...(options.headers as Record<string, string> || {}),
     }
 
     if (token) {
@@ -102,10 +102,13 @@ class ApiClient {
               localStorage.setItem('refresh_token', newTokens.refresh_token)
               
               // Retry original request with new token
-              headers['Authorization'] = `Bearer ${newTokens.access_token}`
+              const retryHeaders: Record<string, string> = {
+                ...headers,
+                'Authorization': `Bearer ${newTokens.access_token}`,
+              }
               const retryResponse = await fetch(url, {
                 ...options,
-                headers,
+                headers: retryHeaders,
               })
               
               // Handle 204 No Content for retry

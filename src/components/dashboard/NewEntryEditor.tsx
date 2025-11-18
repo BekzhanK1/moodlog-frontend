@@ -42,8 +42,8 @@ export const NewEntryEditor = forwardRef<NewEntryEditorHandle, NewEntryEditorPro
     const [content, setContent] = useState(initialContent)
     const [isAutoSaving, setIsAutoSaving] = useState(false)
     const [lastSaved, setLastSaved] = useState<Date | null>(null)
-    const [draftEntryId, setDraftEntryId] = useState<string | null>(externalDraftEntryId)
-    const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+    const [_draftEntryId, setDraftEntryId] = useState<string | null>(externalDraftEntryId)
+    const autoSaveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
     const lastSavedRef = useRef<string>('') // Track last saved content to avoid unnecessary saves
 
     // Update state when initial values change
@@ -52,7 +52,7 @@ export const NewEntryEditor = forwardRef<NewEntryEditorHandle, NewEntryEditorPro
       setContent(initialContent)
     }, [initialTitle, initialContent])
 
-    // Update draftEntryId when external prop changes
+    // Update _draftEntryId when external prop changes
     useEffect(() => {
       setDraftEntryId(externalDraftEntryId)
     }, [externalDraftEntryId])
@@ -96,7 +96,7 @@ export const NewEntryEditor = forwardRef<NewEntryEditorHandle, NewEntryEditorPro
         if (onAutoSave && content.trim()) {
           setIsAutoSaving(true)
           try {
-            const savedDraftId = await onAutoSave(title.trim() || null, content.trim())
+            const savedDraftId = await onAutoSave(title.trim() || '', content.trim())
             if (savedDraftId) {
               setDraftEntryId(savedDraftId)
               setLastSaved(new Date())
