@@ -34,7 +34,7 @@ export const NewEntryEditor = forwardRef<NewEntryEditorHandle, NewEntryEditorPro
     initialTitle = '',
     initialContent = '',
     buttonText = 'Сохранить',
-    draftEntryId: externalDraftEntryId = null,
+    draftEntryId: _externalDraftEntryId = null,
     isEditing = false,
   }, ref) {
     const isMobile = useMediaQuery('(max-width: 768px)')
