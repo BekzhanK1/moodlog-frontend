@@ -11,7 +11,7 @@ import {
   Box,
   Transition,
 } from '@mantine/core'
-import { useIntersection } from '@mantine/hooks'
+import { useIntersection, useMediaQuery } from '@mantine/hooks'
 import { useEffect, useState } from 'react'
 import {
   IconBrain,
@@ -33,6 +33,7 @@ interface FeatureCardProps {
 
 function FeatureCard({ icon: Icon, title, description, index, visible }: FeatureCardProps) {
   const [mounted, setMounted] = useState(false)
+  const isMobile = useMediaQuery('(max-width: 768px)')
 
   useEffect(() => {
     if (visible) {
@@ -52,7 +53,7 @@ function FeatureCard({ icon: Icon, title, description, index, visible }: Feature
     >
       {(styles) => (
         <Card
-          padding="xl"
+          padding={isMobile ? 'md' : 'xl'}
           radius={0}
           style={{
             ...styles,
@@ -63,9 +64,9 @@ function FeatureCard({ icon: Icon, title, description, index, visible }: Feature
           }}
           className="card-hover"
         >
-          <Stack gap="md">
+          <Stack gap={isMobile ? 'sm' : 'md'}>
             <ThemeIcon
-              size={50}
+              size={isMobile ? 40 : 50}
               radius={0}
               variant="light"
               style={{
@@ -76,11 +77,11 @@ function FeatureCard({ icon: Icon, title, description, index, visible }: Feature
               }}
               className="card-icon"
             >
-              <Icon size={24} />
+              <Icon size={isMobile ? 20 : 24} />
             </ThemeIcon>
             <Title
               order={4}
-              size={22}
+              size={isMobile ? 18 : 22}
               style={{
                 color: '#000',
                 fontWeight: 500,
@@ -97,6 +98,7 @@ function FeatureCard({ icon: Icon, title, description, index, visible }: Feature
                 fontWeight: 300,
                 lineHeight: 1.7,
                 marginTop: '8px',
+                fontSize: isMobile ? '14px' : '15px',
               }}
             >
               {description}
@@ -111,6 +113,8 @@ function FeatureCard({ icon: Icon, title, description, index, visible }: Feature
 function LandingPage() {
   const [mounted, setMounted] = useState(false)
   const [featuresVisible, setFeaturesVisible] = useState(false)
+  const isMobile = useMediaQuery('(max-width: 768px)')
+  const isTablet = useMediaQuery('(max-width: 1024px) and (min-width: 769px)')
   const { ref: featuresIntersectionRef, entry: featuresEntry } = useIntersection({
     threshold: 0.1,
   })
@@ -139,12 +143,13 @@ function LandingPage() {
       {/* Hero Section */}
       <Box
         style={{
-          minHeight: '100vh',
+          minHeight: isMobile ? '80vh' : '100vh',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           position: 'relative',
           overflow: 'hidden',
+          padding: isMobile ? '40px 20px' : isTablet ? '60px 40px' : '80px 40px',
         }}
       >
         {/* Animated background gradient */}
@@ -160,33 +165,37 @@ function LandingPage() {
             willChange: 'opacity, transform',
           }}
         />
-        {/* Decorative elements */}
-        <Box
-          style={{
-            position: 'absolute',
-            top: '20%',
-            right: '10%',
-            width: '300px',
-            height: '300px',
-            borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(0,0,0,0.03) 0%, transparent 70%)',
-            filter: 'blur(60px)',
-            animation: mounted ? 'float 20s ease-in-out infinite' : 'none',
-          }}
-        />
-        <Box
-          style={{
-            position: 'absolute',
-            bottom: '20%',
-            left: '10%',
-            width: '250px',
-            height: '250px',
-            borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(0,0,0,0.02) 0%, transparent 70%)',
-            filter: 'blur(50px)',
-            animation: mounted ? 'float 25s ease-in-out infinite reverse' : 'none',
-          }}
-        />
+        {/* Decorative elements - hidden on mobile */}
+        {!isMobile && (
+          <>
+            <Box
+              style={{
+                position: 'absolute',
+                top: '20%',
+                right: '10%',
+                width: isTablet ? '200px' : '300px',
+                height: isTablet ? '200px' : '300px',
+                borderRadius: '50%',
+                background: 'radial-gradient(circle, rgba(0,0,0,0.03) 0%, transparent 70%)',
+                filter: 'blur(60px)',
+                animation: mounted ? 'float 20s ease-in-out infinite' : 'none',
+              }}
+            />
+            <Box
+              style={{
+                position: 'absolute',
+                bottom: '20%',
+                left: '10%',
+                width: isTablet ? '150px' : '250px',
+                height: isTablet ? '150px' : '250px',
+                borderRadius: '50%',
+                background: 'radial-gradient(circle, rgba(0,0,0,0.02) 0%, transparent 70%)',
+                filter: 'blur(50px)',
+                animation: mounted ? 'float 25s ease-in-out infinite reverse' : 'none',
+              }}
+            />
+          </>
+        )}
         <style>{`
           @keyframes pulse {
             0%, 100% { 
@@ -265,8 +274,8 @@ function LandingPage() {
           }
         `}</style>
 
-        <Container size="lg" style={{ position: 'relative', zIndex: 1 }}>
-          <Stack align="center" gap="xl" ta="center">
+        <Container size="lg" style={{ position: 'relative', zIndex: 1, padding: isMobile ? '0 16px' : '0 24px' }}>
+          <Stack align="center" gap={isMobile ? 'lg' : 'xl'} ta="center">
             <Transition
               mounted={mounted}
               transition="fade"
@@ -276,11 +285,11 @@ function LandingPage() {
               {(styles) => (
                 <Title
                   order={1}
-                  size={90}
+                  size={isMobile ? 48 : isTablet ? 64 : 90}
                   fw={200}
                   style={{
                     ...styles,
-                    letterSpacing: '12px',
+                    letterSpacing: isMobile ? '6px' : isTablet ? '8px' : '12px',
                     textTransform: 'uppercase',
                     color: '#000',
                     fontFamily: 'system-ui, -apple-system, sans-serif',
@@ -303,11 +312,12 @@ function LandingPage() {
                   style={{
                     ...styles,
                     color: '#333',
-                    maxWidth: '700px',
+                    maxWidth: isMobile ? '100%' : '700px',
                     fontWeight: 400,
                     letterSpacing: '0.5px',
-                    fontSize: '28px',
+                    fontSize: isMobile ? '20px' : isTablet ? '24px' : '28px',
                     lineHeight: 1.4,
+                    padding: isMobile ? '0 8px' : '0',
                   }}
                 >
                   Что если ваш дневник мог бы читать между строк?
@@ -327,11 +337,12 @@ function LandingPage() {
                   style={{
                     ...styles,
                     color: '#555',
-                    maxWidth: '650px',
+                    maxWidth: isMobile ? '100%' : '650px',
                     fontWeight: 300,
                     lineHeight: 1.8,
-                    fontSize: '18px',
+                    fontSize: isMobile ? '16px' : isTablet ? '17px' : '18px',
                     marginTop: '20px',
+                    padding: isMobile ? '0 8px' : '0',
                   }}
                 >
                   MoodLog анализирует ваши записи, обнаруживает скрытые паттерны и помогает понять себя глубже. 
@@ -347,21 +358,22 @@ function LandingPage() {
               timingFunction="cubic-bezier(0.16, 1, 0.3, 1)"
             >
               {(styles) => (
-                <Group mt="xl" style={styles}>
+                <Group mt="xl" style={styles} gap={isMobile ? 'md' : 'lg'} justify="center" wrap={isMobile ? 'wrap' : 'nowrap'}>
                   <Button
                     component={Link}
                     to="/register"
-                    size="lg"
+                    size={isMobile ? 'md' : 'lg'}
                     radius={0}
                     variant="filled"
+                    fullWidth={isMobile}
                     style={{
                       backgroundColor: '#000',
                       color: '#fff',
                       border: '1px solid #000',
                       fontWeight: 500,
                       letterSpacing: '1px',
-                      padding: '16px 40px',
-                      fontSize: '16px',
+                      padding: isMobile ? '14px 32px' : '16px 40px',
+                      fontSize: isMobile ? '14px' : '16px',
                       textDecoration: 'none',
                     }}
                     className="button-smooth"
@@ -381,16 +393,18 @@ function LandingPage() {
                   <Button
                     component={Link}
                     to="/login"
-                    size="lg"
+                    size={isMobile ? 'md' : 'lg'}
                     radius={0}
                     variant="outline"
+                    fullWidth={isMobile}
                     style={{
                       borderColor: '#000',
                       color: '#000',
                       backgroundColor: 'transparent',
                       fontWeight: 400,
                       letterSpacing: '1px',
-                      padding: '12px 32px',
+                      padding: isMobile ? '12px 28px' : '12px 32px',
+                      fontSize: isMobile ? '14px' : '16px',
                       textDecoration: 'none',
                     }}
                     className="button-smooth"
@@ -415,21 +429,22 @@ function LandingPage() {
       {/* Features Section */}
       <Box
         ref={featuresIntersectionRef}
-        py={120}
+        py={isMobile ? 60 : isTablet ? 80 : 120}
         style={{
           backgroundColor: '#fff',
           borderTop: '1px solid #eee',
         }}
       >
-        <Container size="lg">
-          <Stack align="center" gap="xl" mb={80}>
+        <Container size="lg" style={{ padding: isMobile ? '0 16px' : '0 24px' }}>
+          <Stack align="center" gap={isMobile ? 'md' : 'xl'} mb={isMobile ? 40 : isTablet ? 60 : 80}>
             <Text
               size="sm"
               style={{
                 color: '#999',
-                letterSpacing: '4px',
+                letterSpacing: isMobile ? '2px' : '4px',
                 textTransform: 'uppercase',
                 fontWeight: 300,
+                fontSize: isMobile ? '11px' : '12px',
               }}
             >
               Почему MoodLog?
@@ -440,15 +455,17 @@ function LandingPage() {
                 color: '#000',
                 fontWeight: 400,
                 marginTop: '16px',
-                maxWidth: '600px',
+                maxWidth: isMobile ? '100%' : '600px',
                 textAlign: 'center',
+                fontSize: isMobile ? '20px' : isTablet ? '24px' : '28px',
+                padding: isMobile ? '0 8px' : '0',
               }}
             >
               Это не просто дневник. Это ваш личный психолог с искусственным интеллектом
             </Text>
           </Stack>
 
-          <Grid>
+          <Grid gutter={isMobile ? 'md' : 'xl'}>
             {[
               {
                 icon: IconBrain,
@@ -483,16 +500,17 @@ function LandingPage() {
             ))}
           </Grid>
           
-          <Box mt={80} ta="center">
+          <Box mt={isMobile ? 40 : isTablet ? 60 : 80} ta="center" style={{ padding: isMobile ? '0 16px' : '0' }}>
             <Text
               size="lg"
               style={{
                 color: '#666',
                 fontWeight: 300,
                 fontStyle: 'italic',
-                maxWidth: '600px',
+                maxWidth: isMobile ? '100%' : '600px',
                 margin: '0 auto',
                 lineHeight: 1.8,
+                fontSize: isMobile ? '16px' : isTablet ? '18px' : '20px',
               }}
             >
               "Впервые я увидел реальные паттерны в своих эмоциях. Это изменило всё."
@@ -503,6 +521,7 @@ function LandingPage() {
                 color: '#999',
                 marginTop: '16px',
                 fontWeight: 300,
+                fontSize: isMobile ? '12px' : '14px',
               }}
             >
               — Пользователь MoodLog
@@ -513,21 +532,22 @@ function LandingPage() {
 
       {/* How it works - Simplified */}
       <Box
-        py={120}
+        py={isMobile ? 60 : isTablet ? 80 : 120}
         style={{
           backgroundColor: '#fff',
           borderTop: '1px solid #eee',
         }}
       >
-        <Container size="lg">
-          <Stack align="center" gap="xl" mb={80}>
+        <Container size="lg" style={{ padding: isMobile ? '0 16px' : '0 24px' }}>
+          <Stack align="center" gap={isMobile ? 'md' : 'xl'} mb={isMobile ? 40 : isTablet ? 60 : 80}>
             <Text
               size="sm"
               style={{
                 color: '#999',
-                letterSpacing: '4px',
+                letterSpacing: isMobile ? '2px' : '4px',
                 textTransform: 'uppercase',
                 fontWeight: 300,
+                fontSize: isMobile ? '11px' : '12px',
               }}
             >
               Три простых шага
@@ -538,14 +558,17 @@ function LandingPage() {
                 color: '#000',
                 fontWeight: 400,
                 marginTop: '16px',
-                maxWidth: '500px',
+                maxWidth: isMobile ? '100%' : '500px',
+                fontSize: isMobile ? '20px' : isTablet ? '24px' : '28px',
+                padding: isMobile ? '0 8px' : '0',
+                textAlign: 'center',
               }}
             >
               Начните понимать себя уже сегодня
             </Text>
           </Stack>
 
-          <Grid>
+          <Grid gutter={isMobile ? 'md' : 'xl'}>
             {[
               { 
                 icon: IconFileText, 
@@ -566,13 +589,13 @@ function LandingPage() {
                 description: 'Получайте инсайты, которые меняют взгляд на себя'
               },
             ].map((item, index) => (
-              <Grid.Col key={index} span={{ base: 12, md: 4 }}>
-                <Stack align="center" gap="md" ta="center">
+              <Grid.Col key={index} span={{ base: 12, sm: 6, md: 4 }}>
+                <Stack align="center" gap={isMobile ? 'sm' : 'md'} ta="center">
                   <Box
                     className="icon-box"
                     style={{
-                      width: '80px',
-                      height: '80px',
+                      width: isMobile ? '60px' : '80px',
+                      height: isMobile ? '60px' : '80px',
                       border: '1px solid #ddd',
                       display: 'flex',
                       alignItems: 'center',
@@ -588,7 +611,7 @@ function LandingPage() {
                       e.currentTarget.style.backgroundColor = '#f9f9f9'
                     }}
                   >
-                    <item.icon size={32} style={{ color: '#000' }} />
+                    <item.icon size={isMobile ? 24 : 32} style={{ color: '#000' }} />
                   </Box>
                   <Text
                     size="xs"
@@ -596,6 +619,7 @@ function LandingPage() {
                       color: '#999',
                       letterSpacing: '2px',
                       fontWeight: 300,
+                      fontSize: isMobile ? '10px' : '12px',
                     }}
                   >
                     {item.step}
@@ -607,6 +631,7 @@ function LandingPage() {
                       fontWeight: 400,
                       letterSpacing: '0.5px',
                       marginTop: '8px',
+                      fontSize: isMobile ? '18px' : isTablet ? '20px' : '22px',
                     }}
                   >
                     {item.text}
@@ -618,8 +643,10 @@ function LandingPage() {
                         color: '#666',
                         fontWeight: 300,
                         marginTop: '8px',
-                        maxWidth: '200px',
+                        maxWidth: isMobile ? '100%' : '200px',
                         lineHeight: 1.5,
+                        fontSize: isMobile ? '14px' : '15px',
+                        padding: isMobile ? '0 16px' : '0',
                       }}
                     >
                       {item.description}
@@ -634,23 +661,24 @@ function LandingPage() {
 
       {/* CTA Section */}
       <Box
-        py={120}
+        py={isMobile ? 60 : isTablet ? 80 : 120}
         style={{
           backgroundColor: '#000',
           borderTop: '1px solid #eee',
         }}
       >
-        <Container size="lg">
-          <Stack align="center" gap="xl" ta="center">
+        <Container size="lg" style={{ padding: isMobile ? '0 16px' : '0 24px' }}>
+          <Stack align="center" gap={isMobile ? 'md' : 'xl'} ta="center">
             <Text
               size="xl"
               style={{
                 color: '#fff',
                 fontWeight: 300,
                 letterSpacing: '1px',
-                maxWidth: '700px',
+                maxWidth: isMobile ? '100%' : '700px',
                 lineHeight: 1.7,
-                fontSize: '32px',
+                fontSize: isMobile ? '22px' : isTablet ? '26px' : '32px',
+                padding: isMobile ? '0 8px' : '0',
               }}
             >
               Готовы узнать о себе то, чего не знали?
@@ -660,9 +688,11 @@ function LandingPage() {
               style={{
                 color: '#ddd',
                 fontWeight: 300,
-                maxWidth: '600px',
-                marginTop: '24px',
+                maxWidth: isMobile ? '100%' : '600px',
+                marginTop: isMobile ? '16px' : '24px',
                 lineHeight: 1.6,
+                fontSize: isMobile ? '16px' : isTablet ? '17px' : '18px',
+                padding: isMobile ? '0 8px' : '0',
               }}
             >
               Присоединяйтесь к тысячам людей, которые уже открыли новые грани себя
@@ -670,18 +700,19 @@ function LandingPage() {
             <Button
               component={Link}
               to="/register"
-              size="lg"
+              size={isMobile ? 'md' : 'lg'}
               radius={0}
               variant="filled"
+              fullWidth={isMobile}
               style={{
                 backgroundColor: '#fff',
                 color: '#000',
                 border: '1px solid #fff',
                 fontWeight: 500,
                 letterSpacing: '1px',
-                padding: '18px 56px',
-                marginTop: '48px',
-                fontSize: '16px',
+                padding: isMobile ? '14px 32px' : '18px 56px',
+                marginTop: isMobile ? '32px' : '48px',
+                fontSize: isMobile ? '14px' : '16px',
                 textDecoration: 'none',
               }}
               className="button-smooth"
@@ -706,13 +737,13 @@ function LandingPage() {
 
       {/* Footer */}
       <Box
-        py={40}
+        py={isMobile ? 24 : 40}
         style={{
           backgroundColor: '#fff',
           borderTop: '1px solid #eee',
         }}
       >
-        <Container size="lg">
+        <Container size="lg" style={{ padding: isMobile ? '0 16px' : '0 24px' }}>
           <Text
             ta="center"
             size="sm"
@@ -720,6 +751,7 @@ function LandingPage() {
               color: '#999',
               fontWeight: 300,
               letterSpacing: '1px',
+              fontSize: isMobile ? '12px' : '14px',
             }}
           >
             © 2025 MoodLog
