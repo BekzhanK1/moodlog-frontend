@@ -34,6 +34,7 @@ export const NewEntryEditor = forwardRef<NewEntryEditorHandle, NewEntryEditorPro
     initialTitle = '',
     initialContent = '',
     buttonText = 'Сохранить',
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     draftEntryId: _externalDraftEntryId = null,
     isEditing = false,
   }, ref) {

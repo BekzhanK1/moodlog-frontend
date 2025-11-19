@@ -21,7 +21,8 @@ import {
   IconTrendingUp,
   IconFileText,
 } from '@tabler/icons-react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
+import { useAuth } from '../contexts/AuthContext'
 
 interface FeatureCardProps {
   icon: React.ComponentType<{ size?: number | string; style?: React.CSSProperties }>
@@ -118,6 +119,16 @@ function LandingPage() {
   const { ref: featuresIntersectionRef, entry: featuresEntry } = useIntersection({
     threshold: 0.1,
   })
+  const navigate = useNavigate()
+  const { isAuthenticated } = useAuth()
+
+  const handleLoginClick = () => {
+    if (isAuthenticated) {
+      navigate('/dashboard')
+    } else {
+      navigate('/login')
+    }
+  }
 
   useEffect(() => {
     if (featuresEntry?.isIntersecting) {
@@ -391,8 +402,7 @@ function LandingPage() {
                     Попробовать бесплатно →
                   </Button>
                   <Button
-                    component={Link}
-                    to="/login"
+                    onClick={handleLoginClick}
                     size={isMobile ? 'md' : 'lg'}
                     radius={0}
                     variant="outline"
