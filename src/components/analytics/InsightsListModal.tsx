@@ -1,7 +1,7 @@
 import { Modal, Text, Stack, Group, Box,ScrollArea } from '@mantine/core'
 import { useMediaQuery } from '@mantine/hooks'
 import { IconCalendar } from '@tabler/icons-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { apiClient } from '../../utils/api'
 
 interface Insight {
@@ -24,13 +24,7 @@ export function InsightsListModal({ opened, onClose, type, onSelect }: InsightsL
   const [insights, setInsights] = useState<Insight[]>([])
   const [loading, setLoading] = useState(false)
 
-  useEffect(() => {
-    if (opened) {
-      fetchInsights()
-    }
-  }, [opened, type])
-
-  const fetchInsights = async () => {
+  const fetchInsights = useCallback(async () => {
     setLoading(true)
     try {
       const result = await apiClient.listInsights(type, 1, 100)
@@ -44,7 +38,13 @@ export function InsightsListModal({ opened, onClose, type, onSelect }: InsightsL
     } finally {
       setLoading(false)
     }
-  }
+  }, [type])
+
+  useEffect(() => {
+    if (opened) {
+      fetchInsights()
+    }
+  }, [opened, fetchInsights])
 
   const handleSelect = (periodKey: string) => {
     onSelect(periodKey)

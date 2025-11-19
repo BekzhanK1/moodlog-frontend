@@ -78,7 +78,7 @@ export function MonthlySummaryCard() {
             setInsight(parsedContent)
           } catch {
             // If parsing fails, treat as plain text
-            const periodLabel = (result as any).period_label || `${monthNames[currentMonth - 1]} ${currentYear}`
+            const periodLabel = result.period_label || `${monthNames[currentMonth - 1]} ${currentYear}`
             setInsight({
               period: {
                 type: 'monthly',
@@ -156,7 +156,7 @@ export function MonthlySummaryCard() {
         parsedContent = typeof result.content === 'string' ? JSON.parse(result.content) : result.content
       } catch {
         // If parsing fails, treat as plain text
-        const periodLabel = (result as any).period_label || `${monthNames[currentMonth - 1]} ${currentYear}`
+        const periodLabel = result.period_label || `${monthNames[currentMonth - 1]} ${currentYear}`
         setInsight({
           period: {
             type: 'monthly',
@@ -175,8 +175,9 @@ export function MonthlySummaryCard() {
       }
       
       setInsight(parsedContent)
-    } catch (err: any) {
-      if (err?.message?.includes('404') || err?.message?.includes('No entries')) {
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : String(err)
+      if (errorMessage.includes('404') || errorMessage.includes('No entries')) {
         setError('Недостаточно записей для генерации сводки')
       } else {
         setError('Не удалось сгенерировать сводку')

@@ -185,8 +185,9 @@ export function WeeklySummaryCard() {
       }
       
       setInsight(parsedContent)
-    } catch (err: any) {
-      if (err?.message?.includes('404') || err?.message?.includes('No entries')) {
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : String(err)
+      if (errorMessage.includes('404') || errorMessage.includes('No entries')) {
         setError('Недостаточно записей для генерации сводки')
       } else {
         setError('Не удалось сгенерировать сводку')

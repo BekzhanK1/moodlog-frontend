@@ -3,6 +3,7 @@ import { createTheme } from '@mantine/core'
 
 export type ThemeName = 'light' | 'dark' | 'monkeytype' | 'nord' | 'dracula' | 'solarized' | 'gruvbox' | 'catppuccin'
 
+// eslint-disable-next-line react-refresh/only-export-components
 export interface ThemeConfig {
   name: ThemeName
   displayName: string
@@ -17,6 +18,7 @@ export interface ThemeConfig {
   }
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const themes: Record<ThemeName, ThemeConfig> = {
   light: {
     name: 'light',
@@ -192,6 +194,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   )
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useTheme() {
   const context = useContext(ThemeContext)
   if (context === undefined) {

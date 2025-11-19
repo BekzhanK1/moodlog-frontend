@@ -89,7 +89,7 @@ export function DashboardPage() {
     if (isAuthenticated && !authLoading) {
       fetchEntries(1, false)
     }
-  }, [searchQuery])
+  }, [searchQuery, isAuthenticated, authLoading, fetchEntries])
 
   // Restore selected entry from URL on mount or when entries change
   useEffect(() => {

@@ -270,8 +270,9 @@ class ApiClient {
     if (month) params.append('month', month.toString())
     try {
       return await this.request<{ id: string; content: string; type: string; period_key: string; created_at: string; period_label?: string }>(`/insights/monthly?${params.toString()}`)
-    } catch (error: any) {
-      if (error?.message?.includes('404')) {
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      if (errorMessage.includes('404')) {
         return null
       }
       throw error
@@ -293,8 +294,9 @@ class ApiClient {
     if (isoWeek) params.append('iso_week', isoWeek.toString())
     try {
       return await this.request<{ id: string; content: string; type: string; period_key: string; created_at: string; period_label?: string }>(`/insights/weekly?${params.toString()}`)
-    } catch (error: any) {
-      if (error?.message?.includes('404')) {
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      if (errorMessage.includes('404')) {
         return null
       }
       throw error
