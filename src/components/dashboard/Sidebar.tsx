@@ -154,67 +154,68 @@ export function Sidebar({
 
   const sidebarContent = (
     <>
-      {/* Buttons */}
-      <Box style={{ padding: isMobile ? '16px' : '16px', borderBottom: '1px solid var(--theme-border)' }}>
-        <Stack gap="sm">
-          <Button
-            fullWidth
-            leftSection={<IconPlus size={isMobile ? 20 : 18} />}
-            radius="md"
-            size={isMobile ? 'md' : 'sm'}
-            onClick={handleNewEntry}
-            style={{
-              backgroundColor: 'var(--theme-primary)',
-              color: 'var(--theme-bg)',
-              fontWeight: 400,
-              border: '1px solid var(--theme-primary)',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = 'var(--theme-bg)'
-              e.currentTarget.style.color = 'var(--theme-primary)'
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'var(--theme-primary)'
-              e.currentTarget.style.color = 'var(--theme-bg)'
-            }}
-          >
-            Новая запись
-          </Button>
+      {/* Buttons - Hidden on mobile (using floating buttons instead) */}
+      {!isMobile && (
+        <Box style={{ padding: '16px', borderBottom: '1px solid var(--theme-border)' }}>
+          <Stack gap="sm">
+            <Button
+              fullWidth
+              leftSection={<IconPlus size={18} />}
+              radius="md"
+              size="sm"
+              onClick={handleNewEntry}
+              style={{
+                backgroundColor: 'var(--theme-primary)',
+                color: 'var(--theme-bg)',
+                fontWeight: 400,
+                border: '1px solid var(--theme-primary)',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = 'var(--theme-bg)'
+                e.currentTarget.style.color = 'var(--theme-primary)'
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'var(--theme-primary)'
+                e.currentTarget.style.color = 'var(--theme-bg)'
+              }}
+            >
+              Новая запись
+            </Button>
 
-          <Button
-            fullWidth
-            leftSection={<IconChartLine size={isMobile ? 20 : 18} />}
-            variant="outline"
-            radius="md"
-            size={isMobile ? 'md' : 'sm'}
-            onClick={() => {
-              navigate('/analytics')
-              if (isMobile && onClose) {
-                onClose()
-              }
-            }}
-            style={{
-              borderColor: 'var(--theme-border)',
-              color: 'var(--theme-text)',
-              backgroundColor: 'var(--theme-bg)',
-              fontWeight: 400,
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = 'var(--theme-primary)'
-              e.currentTarget.style.backgroundColor = 'var(--theme-hover)'
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = 'var(--theme-border)'
-              e.currentTarget.style.backgroundColor = 'var(--theme-bg)'
-            }}
-          >
-            Аналитика
-          </Button>
+            <Button
+              fullWidth
+              leftSection={<IconChartLine size={18} />}
+              variant="outline"
+              radius="md"
+              size="sm"
+              onClick={() => navigate('/analytics')}
+              style={{
+                borderColor: 'var(--theme-border)',
+                color: 'var(--theme-text)',
+                backgroundColor: 'var(--theme-bg)',
+                fontWeight: 400,
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = 'var(--theme-primary)'
+                e.currentTarget.style.backgroundColor = 'var(--theme-hover)'
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = 'var(--theme-border)'
+                e.currentTarget.style.backgroundColor = 'var(--theme-bg)'
+              }}
+            >
+              Аналитика
+            </Button>
+          </Stack>
+        </Box>
+      )}
 
-          <TextInput
-            placeholder="Поиск или #тег"
-            value={searchValue}
-            onChange={(e) => {
+      {/* Search Input */}
+      <Box style={{ padding: '16px', borderBottom: '1px solid var(--theme-border)' }}>
+        <TextInput
+          placeholder="Поиск или #тег"
+          value={searchValue}
+          onChange={(e) => {
               const value = e.currentTarget.value
               setSearchValue(value)
               
@@ -276,7 +277,6 @@ export function Sidebar({
               },
             }}
           />
-        </Stack>
       </Box>
 
       {/* Entries list */}

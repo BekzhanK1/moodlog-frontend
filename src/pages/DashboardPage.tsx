@@ -1,8 +1,8 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Box, Loader, Alert, Stack, ScrollArea, Text } from '@mantine/core'
+import { Box, Loader, Alert, Stack, ScrollArea, Text, ActionIcon } from '@mantine/core'
 import { useMediaQuery } from '@mantine/hooks'
-import { IconAlertCircle } from '@tabler/icons-react'
+import { IconAlertCircle, IconPlus, IconChartLine } from '@tabler/icons-react'
 import { useAuth } from '../contexts/AuthContext'
 import { apiClient, EntryResponse, EntryListResponse } from '../utils/api'
 import { Navbar } from '../components/dashboard/Navbar'
@@ -448,6 +448,8 @@ export function DashboardPage() {
           style={{
             flex: 1,
             backgroundColor: 'var(--theme-bg)',
+            height: '100%',
+            paddingBottom: isMobile ? '100px' : '0',
           }}
         >
           {error && (
@@ -472,18 +474,22 @@ export function DashboardPage() {
           {isAnalyzing ? (
             <Box
               style={{
-                height: '100%',
+                minHeight: 'calc(100vh - 120px)',
+                width: '100%',
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
                 justifyContent: 'center',
                 padding: '40px',
                 gap: '24px',
+                backgroundColor: 'var(--theme-bg)',
+                position: 'relative',
               }}
             >
               <Loader size="lg" color="var(--theme-primary)" />
               <Stack gap="xs" align="center">
                 <Text
+                  component="div"
                   style={{
                     fontSize: isMobile ? '16px' : '18px',
                     fontWeight: 500,
@@ -493,6 +499,7 @@ export function DashboardPage() {
                   Анализ записи...
                 </Text>
                 <Text
+                  component="div"
                   size="sm"
                   style={{
                     color: 'var(--theme-text-secondary)',
@@ -584,6 +591,90 @@ export function DashboardPage() {
           />
         )}
       </Box>
+
+      {/* Mobile Floating Action Buttons - Hidden when editing/creating */}
+      {isMobile && !isNewEntry && !isEditingEntry && (
+        <Box
+          style={{
+            position: 'fixed',
+            bottom: '24px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+            zIndex: 1000,
+            pointerEvents: 'none',
+          }}
+        >
+          {/* Analytics Button */}
+          <ActionIcon
+            variant="filled"
+            size="xl"
+            radius="xl"
+            onClick={() => navigate('/analytics')}
+            style={{
+              backgroundColor: 'var(--theme-bg)',
+              color: 'var(--theme-text)',
+              border: '1px solid var(--theme-border)',
+              width: '56px',
+              height: '56px',
+              boxShadow: '0 4px 16px rgba(0, 0, 0, 0.2)',
+              pointerEvents: 'auto',
+              transition: 'all 0.2s ease',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'scale(1.1)'
+              e.currentTarget.style.boxShadow = '0 6px 20px rgba(0, 0, 0, 0.25)'
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'scale(1)'
+              e.currentTarget.style.boxShadow = '0 4px 16px rgba(0, 0, 0, 0.2)'
+            }}
+            onTouchStart={(e) => {
+              e.currentTarget.style.transform = 'scale(0.95)'
+            }}
+            onTouchEnd={(e) => {
+              e.currentTarget.style.transform = 'scale(1)'
+            }}
+          >
+            <IconChartLine size={26} stroke={2} />
+          </ActionIcon>
+
+          {/* New Entry Button - Big Plus */}
+          <ActionIcon
+            variant="filled"
+            size="xl"
+            radius="xl"
+            onClick={handleNewEntry}
+            style={{
+              backgroundColor: 'var(--theme-primary)',
+              color: 'var(--theme-bg)',
+              width: '56px',
+              height: '56px',
+              boxShadow: '0 4px 16px rgba(0, 0, 0, 0.2)',
+              pointerEvents: 'auto',
+              transition: 'all 0.2s ease',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'scale(1.1)'
+              e.currentTarget.style.boxShadow = '0 6px 20px rgba(0, 0, 0, 0.25)'
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'scale(1)'
+              e.currentTarget.style.boxShadow = '0 4px 16px rgba(0, 0, 0, 0.2)'
+            }}
+            onTouchStart={(e) => {
+              e.currentTarget.style.transform = 'scale(0.95)'
+            }}
+            onTouchEnd={(e) => {
+              e.currentTarget.style.transform = 'scale(1)'
+            }}
+          >
+            <IconPlus size={28} stroke={2.5} />
+          </ActionIcon>
+        </Box>
+      )}
     </Box>
   )
 }

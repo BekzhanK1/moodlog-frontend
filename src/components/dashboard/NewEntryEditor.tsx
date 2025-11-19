@@ -121,9 +121,11 @@ export const NewEntryEditor = forwardRef<NewEntryEditorHandle, NewEntryEditorPro
     }
 
     return (
-      <Box
+      <>
+        <Box
         style={{
           padding: isMobile ? '20px 16px' : '40px',
+          paddingBottom: isMobile ? '100px' : '120px',
           maxWidth: '800px',
           margin: '0 auto',
           backgroundColor: 'var(--theme-bg)',
@@ -287,41 +289,63 @@ export const NewEntryEditor = forwardRef<NewEntryEditorHandle, NewEntryEditorPro
             </>
           )}
 
-          {/* Save button */}
-          <Group justify="flex-end" mt="md">
-            <Button
-              onClick={onSave}
-              loading={isSaving}
-              disabled={!content.trim() || isSaving}
-              radius="md"
-              size={isMobile ? 'lg' : 'md'}
-              fullWidth={isMobile}
-              style={{
-                backgroundColor: 'var(--theme-primary)',
-                color: 'var(--theme-bg)',
-                fontWeight: 400,
-                border: '1px solid var(--theme-primary)',
-                transition: 'all 0.3s ease',
-                minHeight: isMobile ? '48px' : 'auto',
-              }}
-              onMouseEnter={(e) => {
-                if (!isSaving && content.trim()) {
-                  e.currentTarget.style.backgroundColor = 'var(--theme-bg)'
-                  e.currentTarget.style.color = 'var(--theme-primary)'
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (!isSaving && content.trim()) {
-                  e.currentTarget.style.backgroundColor = 'var(--theme-primary)'
-                  e.currentTarget.style.color = 'var(--theme-bg)'
-                }
-              }}
-            >
-              {buttonText}
-            </Button>
-          </Group>
         </Stack>
       </Box>
+
+      {/* Floating Save Button - All screen sizes */}
+      <Box
+        style={{
+          position: 'fixed',
+          bottom: isMobile ? '24px' : '32px',
+          right: isMobile ? '50%' : '32px',
+          transform: isMobile ? 'translateX(50%)' : 'none',
+          zIndex: 1000,
+        }}
+      >
+        <Button
+          onClick={onSave}
+          loading={isSaving}
+          disabled={!content.trim() || isSaving}
+          radius="xl"
+          size={isMobile ? 'lg' : 'md'}
+          style={{
+            backgroundColor: 'var(--theme-primary)',
+            color: 'var(--theme-bg)',
+            fontWeight: 500,
+            border: '1px solid var(--theme-primary)',
+            transition: 'all 0.3s ease',
+            minHeight: isMobile ? '56px' : '48px',
+            minWidth: isMobile ? '120px' : '140px',
+            boxShadow: '0 4px 16px rgba(0, 0, 0, 0.2)',
+            padding: isMobile ? '0 32px' : '0 40px',
+          }}
+          onMouseEnter={(e) => {
+            if (!isSaving && content.trim()) {
+              e.currentTarget.style.transform = 'scale(1.05)'
+              e.currentTarget.style.boxShadow = '0 6px 20px rgba(0, 0, 0, 0.25)'
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (!isSaving && content.trim()) {
+              e.currentTarget.style.transform = 'scale(1)'
+              e.currentTarget.style.boxShadow = '0 4px 16px rgba(0, 0, 0, 0.2)'
+            }
+          }}
+          onTouchStart={(e) => {
+            if (!isSaving && content.trim()) {
+              e.currentTarget.style.transform = 'scale(0.95)'
+            }
+          }}
+          onTouchEnd={(e) => {
+            if (!isSaving && content.trim()) {
+              e.currentTarget.style.transform = 'scale(1)'
+            }
+          }}
+        >
+          {buttonText}
+        </Button>
+      </Box>
+      </>
     )
   }
 )
