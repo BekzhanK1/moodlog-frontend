@@ -3,7 +3,6 @@ import { createTheme } from '@mantine/core'
 
 export type ThemeName = 'light' | 'dark' | 'monkeytype' | 'nord' | 'dracula' | 'solarized' | 'gruvbox' | 'catppuccin'
 
-// eslint-disable-next-line react-refresh/only-export-components
 export interface ThemeConfig {
   name: ThemeName
   displayName: string

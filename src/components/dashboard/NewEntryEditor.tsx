@@ -42,7 +42,6 @@ export const NewEntryEditor = forwardRef<NewEntryEditorHandle, NewEntryEditorPro
     const [content, setContent] = useState(initialContent)
     const [isAutoSaving, setIsAutoSaving] = useState(false)
     const [lastSaved, setLastSaved] = useState<Date | null>(null)
-    const [draftEntryId, setDraftEntryId] = useState<string | null>(externalDraftEntryId)
     const autoSaveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
     const lastSavedRef = useRef<string>('') // Track last saved content to avoid unnecessary saves
 
@@ -52,18 +51,12 @@ export const NewEntryEditor = forwardRef<NewEntryEditorHandle, NewEntryEditorPro
       setContent(initialContent)
     }, [initialTitle, initialContent])
 
-    // Update draftEntryId when external prop changes
-    useEffect(() => {
-      setDraftEntryId(externalDraftEntryId)
-    }, [externalDraftEntryId])
-
     useImperativeHandle(ref, () => ({
       getTitle: () => title,
       getContent: () => content,
       reset: () => {
         setTitle('')
         setContent('')
-        setDraftEntryId(null)
         setLastSaved(null)
         lastSavedRef.current = ''
       },
@@ -98,7 +91,6 @@ export const NewEntryEditor = forwardRef<NewEntryEditorHandle, NewEntryEditorPro
           try {
             const savedDraftId = await onAutoSave(title.trim() || '', content.trim())
             if (savedDraftId) {
-              setDraftEntryId(savedDraftId)
               setLastSaved(new Date())
               lastSavedRef.current = `${title}|${content}`
             }
