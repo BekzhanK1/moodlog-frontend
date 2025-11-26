@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Box, Loader, Alert, Stack, ScrollArea, Text, ActionIcon } from '@mantine/core'
+import { Box, Alert, Stack, ScrollArea, Text, ActionIcon } from '@mantine/core'
 import { useMediaQuery } from '@mantine/hooks'
 import { IconAlertCircle, IconPlus, IconChartLine } from '@tabler/icons-react'
 import { useAuth } from '../contexts/AuthContext'
@@ -360,8 +360,40 @@ export function DashboardPage() {
           backgroundColor: 'var(--theme-bg)',
         }}
       >
-        <Stack align="center" gap="md">
-          <Loader size="lg" />
+        <Stack align="center" gap="xl">
+          <Box
+            style={{
+              fontSize: isMobile ? '32px' : '48px',
+              fontWeight: 200,
+              letterSpacing: isMobile ? '4px' : '8px',
+              color: 'var(--theme-text)',
+              opacity: 0.8,
+              animation: 'pulse 2s ease-in-out infinite',
+            }}
+          >
+            MoodLog
+          </Box>
+          <Box
+            style={{
+              display: 'flex',
+              gap: '8px',
+              alignItems: 'center',
+            }}
+          >
+            {[0, 1, 2].map((i) => (
+              <Box
+                key={i}
+                style={{
+                  width: '8px',
+                  height: '8px',
+                  borderRadius: '50%',
+                  backgroundColor: 'var(--theme-primary)',
+                  opacity: 0.4,
+                  animation: `pulse 1.4s ease-in-out ${i * 0.2}s infinite`,
+                }}
+              />
+            ))}
+          </Box>
         </Stack>
       </Box>
     )
@@ -481,19 +513,66 @@ export function DashboardPage() {
                 alignItems: 'center',
                 justifyContent: 'center',
                 padding: '40px',
-                gap: '24px',
+                gap: '32px',
                 backgroundColor: 'var(--theme-bg)',
                 position: 'relative',
+                animation: 'fadeIn 0.4s ease-out',
               }}
             >
-              <Loader size="lg" color="var(--theme-primary)" />
-              <Stack gap="xs" align="center">
+              {/* Modern AI brain icon with animation */}
+              <Box
+                style={{
+                  position: 'relative',
+                  width: isMobile ? '80px' : '100px',
+                  height: isMobile ? '80px' : '100px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                {/* Outer ring */}
+                <Box
+                  style={{
+                    position: 'absolute',
+                    width: '100%',
+                    height: '100%',
+                    border: '2px solid var(--theme-border)',
+                    borderRadius: '50%',
+                    borderTopColor: 'var(--theme-primary)',
+                    animation: 'spin 1.5s linear infinite',
+                  }}
+                />
+                {/* Inner ring */}
+                <Box
+                  style={{
+                    position: 'absolute',
+                    width: '70%',
+                    height: '70%',
+                    border: '2px solid var(--theme-border)',
+                    borderRadius: '50%',
+                    borderBottomColor: 'var(--theme-primary)',
+                    animation: 'spin 1s linear infinite reverse',
+                  }}
+                />
+                {/* Brain icon placeholder - using dots */}
+                <Box
+                  style={{
+                    fontSize: isMobile ? '28px' : '36px',
+                    animation: 'pulse 2s ease-in-out infinite',
+                  }}
+                >
+                  🧠
+                </Box>
+              </Box>
+              
+              <Stack gap="md" align="center">
                 <Text
                   component="div"
                   style={{
-                    fontSize: isMobile ? '16px' : '18px',
+                    fontSize: isMobile ? '18px' : '22px',
                     fontWeight: 500,
                     color: 'var(--theme-text)',
+                    animation: 'fadeIn 0.5s ease-out 0.2s backwards',
                   }}
                 >
                   Анализ записи...
@@ -505,10 +584,36 @@ export function DashboardPage() {
                     color: 'var(--theme-text-secondary)',
                     textAlign: 'center',
                     maxWidth: '400px',
+                    lineHeight: 1.6,
+                    animation: 'fadeIn 0.5s ease-out 0.4s backwards',
                   }}
                 >
                   Искусственный интеллект анализирует вашу запись и определяет настроение, теги и другие характеристики
                 </Text>
+                
+                {/* Progress dots */}
+                <Box
+                  style={{
+                    display: 'flex',
+                    gap: '6px',
+                    marginTop: '8px',
+                    animation: 'fadeIn 0.5s ease-out 0.6s backwards',
+                  }}
+                >
+                  {[0, 1, 2, 3, 4].map((i) => (
+                    <Box
+                      key={i}
+                      style={{
+                        width: '6px',
+                        height: '6px',
+                        borderRadius: '50%',
+                        backgroundColor: 'var(--theme-primary)',
+                        opacity: 0.3,
+                        animation: `pulse 1s ease-in-out ${i * 0.15}s infinite`,
+                      }}
+                    />
+                  ))}
+                </Box>
               </Stack>
             </Box>
           ) : isNewEntry || isEditingEntry ? (
@@ -517,6 +622,19 @@ export function DashboardPage() {
               onContentChange={handleWordCountChange}
               onSave={handleSaveEntry}
               onAutoSave={handleAutoSave}
+              onClose={() => {
+                // Capture current editing state before resetting
+                const wasEditing = isEditingEntry
+                setIsNewEntry(false)
+                setIsEditingEntry(false)
+                setWordCount(0)
+                setDraftEntryId(null)
+                // Keep selectedEntry if we were editing, to show it after cancel
+                if (!wasEditing) {
+                  setSelectedEntry(null)
+                  setSearchParams({})
+                }
+              }}
               isSaving={isSaving}
               wordCount={wordCount}
               initialTitle={isEditingEntry && selectedEntry ? selectedEntry.title || '' : ''}
@@ -555,12 +673,21 @@ export function DashboardPage() {
                 alignItems: 'center',
                 justifyContent: 'center',
                 padding: '40px',
+                cursor: 'pointer',
+              }}
+              onClick={handleNewEntry}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = 'var(--theme-hover)'
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'var(--theme-bg)'
               }}
             >
               <Box
                 style={{
                   textAlign: 'center',
                   color: '#999',
+                  transition: 'transform 0.3s ease',
                 }}
               >
                 <Box
@@ -573,8 +700,30 @@ export function DashboardPage() {
                 >
                   MoodLog
                 </Box>
-                <Box style={{ fontSize: isMobile ? '12px' : '14px', fontWeight: 300 }}>
-                  Выберите запись из списка или создайте новую
+                <Box style={{ fontSize: isMobile ? '12px' : '14px', fontWeight: 300, marginBottom: '24px' }}>
+                  Нажмите, чтобы начать писать
+                </Box>
+                <Box
+                  style={{
+                    display: 'inline-block',
+                    padding: '12px 24px',
+                    border: '1px solid var(--theme-border)',
+                    borderRadius: '8px',
+                    color: 'var(--theme-text-secondary)',
+                    fontSize: isMobile ? '14px' : '16px',
+                    transition: 'all 0.3s ease',
+                  }}
+                >
+                  <span style={{ 
+                    display: 'inline-block',
+                    width: '2px',
+                    height: '20px',
+                    backgroundColor: 'var(--theme-primary)',
+                    animation: 'blink 1s step-end infinite',
+                    marginRight: '4px',
+                    verticalAlign: 'middle',
+                  }} />
+                  Начните писать...
                 </Box>
               </Box>
             </Box>

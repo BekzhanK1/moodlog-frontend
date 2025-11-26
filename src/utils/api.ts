@@ -59,6 +59,8 @@ export interface EntryUpdateRequest {
 
 class ApiClient {
   private baseUrl: string
+  private isRefreshing: boolean = false
+  private refreshPromise: Promise<TokenResponse> | null = null
 
   constructor(baseUrl: string) {
     this.baseUrl = baseUrl
@@ -94,10 +96,22 @@ class ApiClient {
       if (!response.ok) {
         // Handle 401 Unauthorized - token expired
         if (response.status === 401) {
-          const refreshToken = localStorage.getItem('refresh_token')
-          if (refreshToken) {
+          const refreshTokenValue = localStorage.getItem('refresh_token')
+          if (refreshTokenValue) {
             try {
-              const newTokens = await this.refreshToken(refreshToken)
+              // Use a single refresh promise to prevent multiple simultaneous refreshes
+              if (!this.isRefreshing) {
+                this.isRefreshing = true
+                this.refreshPromise = this.refreshToken(refreshTokenValue)
+                  .finally(() => {
+                    this.isRefreshing = false
+                    this.refreshPromise = null
+                  })
+              }
+              
+              const newTokens = await this.refreshPromise!
+              
+              // Update tokens in localStorage (safe to do multiple times with same values)
               localStorage.setItem('access_token', newTokens.access_token)
               localStorage.setItem('refresh_token', newTokens.refresh_token)
               
