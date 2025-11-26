@@ -2,7 +2,7 @@ import { useState, forwardRef, useImperativeHandle, useEffect, useRef } from 're
 import * as React from 'react'
 import { Box, TextInput, Textarea, Stack, Button, Group, Divider, Text } from '@mantine/core'
 import { useMediaQuery } from '@mantine/hooks'
-import { IconCheck, IconLoader } from '@tabler/icons-react'
+import { IconCheck, IconLoader, IconX } from '@tabler/icons-react'
 
 export interface NewEntryEditorHandle {
   getTitle: () => string
@@ -15,6 +15,7 @@ interface NewEntryEditorProps {
   onContentChange?: (wordCount: number) => void
   onSave?: () => void
   onAutoSave?: (title: string, content: string) => Promise<string | null> // Returns draft entry ID
+  onClose?: () => void // Close/cancel the editor
   isSaving?: boolean
   wordCount?: number
   initialTitle?: string
@@ -29,6 +30,7 @@ export const NewEntryEditor = forwardRef<NewEntryEditorHandle, NewEntryEditorPro
     onContentChange, 
     onSave, 
     onAutoSave,
+    onClose,
     isSaving = false, 
     wordCount = 0,
     initialTitle = '',
@@ -133,26 +135,53 @@ export const NewEntryEditor = forwardRef<NewEntryEditorHandle, NewEntryEditorPro
         }}
       >
         <Stack gap="lg">
-          {/* Auto-save indicator */}
-          {(isAutoSaving || lastSaved) && (
-            <Group justify="flex-end" gap="xs" style={{ marginTop: '-16px', marginBottom: '-8px' }}>
-              {isAutoSaving ? (
-                <Group gap={4}>
-                  <IconLoader size={14} style={{ color: 'var(--theme-text-secondary)', animation: 'spin 1s linear infinite' }} />
-                  <Text size="xs" style={{ color: 'var(--theme-text-secondary)' }}>
-                    Сохранение...
-                  </Text>
-                </Group>
-              ) : lastSaved ? (
-                <Group gap={4}>
-                  <IconCheck size={14} style={{ color: 'var(--theme-primary)' }} />
-                  <Text size="xs" style={{ color: 'var(--theme-text-secondary)' }}>
-                    Сохранено {lastSaved.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
-                  </Text>
-                </Group>
-              ) : null}
-            </Group>
-          )}
+          {/* Close button and auto-save indicator */}
+          <Group justify="space-between" align="center" style={{ marginTop: '-8px', marginBottom: '-8px' }}>
+            {/* Close button */}
+            {onClose && (
+              <Button
+                variant="subtle"
+                leftSection={<IconX size={16} />}
+                size={isMobile ? 'sm' : 'md'}
+                onClick={onClose}
+                radius="md"
+                style={{
+                  color: 'var(--theme-text)',
+                  backgroundColor: 'transparent',
+                  border: '1px solid var(--theme-border)',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = 'var(--theme-hover)'
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent'
+                }}
+              >
+                {isEditing ? 'Отмена' : 'Закрыть'}
+              </Button>
+            )}
+            
+            {/* Auto-save indicator */}
+            {(isAutoSaving || lastSaved) && (
+              <Group gap={4}>
+                {isAutoSaving ? (
+                  <>
+                    <IconLoader size={14} style={{ color: 'var(--theme-text-secondary)', animation: 'spin 1s linear infinite' }} />
+                    <Text size="xs" style={{ color: 'var(--theme-text-secondary)' }}>
+                      Сохранение...
+                    </Text>
+                  </>
+                ) : lastSaved ? (
+                  <>
+                    <IconCheck size={14} style={{ color: 'var(--theme-primary)' }} />
+                    <Text size="xs" style={{ color: 'var(--theme-text-secondary)' }}>
+                      Сохранено {lastSaved.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
+                    </Text>
+                  </>
+                ) : null}
+              </Group>
+            )}
+          </Group>
 
           {/* Title input */}
           <TextInput
@@ -189,12 +218,13 @@ export const NewEntryEditor = forwardRef<NewEntryEditorHandle, NewEntryEditorPro
             variant="unstyled"
             minRows={isMobile ? 15 : 20}
             autosize
+            autoFocus={!isEditing}
             styles={{
               input: {
                 border: 'none',
                 backgroundColor: 'transparent',
                 color: 'var(--theme-text)',
-                fontSize: isMobile ? '14px' : '16px',
+                fontSize: '16px', // Minimum 16px to prevent iOS zoom
                 fontWeight: 400,
                 lineHeight: 1.8,
                 padding: isMobile ? '12px 0' : '16px 0',

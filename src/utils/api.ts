@@ -59,6 +59,8 @@ export interface EntryUpdateRequest {
 
 class ApiClient {
   private baseUrl: string
+  private isRefreshing: boolean = false
+  private refreshPromise: Promise<TokenResponse> | null = null
 
   constructor(baseUrl: string) {
     this.baseUrl = baseUrl
@@ -94,12 +96,24 @@ class ApiClient {
       if (!response.ok) {
         // Handle 401 Unauthorized - token expired
         if (response.status === 401) {
-          const refreshToken = localStorage.getItem('refresh_token')
-          if (refreshToken) {
+          const refreshTokenValue = localStorage.getItem('refresh_token')
+          if (refreshTokenValue) {
             try {
-              const newTokens = await this.refreshToken(refreshToken)
-              localStorage.setItem('access_token', newTokens.access_token)
-              localStorage.setItem('refresh_token', newTokens.refresh_token)
+              // Use a single refresh promise to prevent multiple simultaneous refreshes
+              if (!this.isRefreshing) {
+                this.isRefreshing = true
+                this.refreshPromise = this.refreshToken(refreshTokenValue)
+              }
+              
+              const newTokens = await this.refreshPromise!
+              
+              // Only update tokens if this is the first refresh to complete
+              if (this.isRefreshing) {
+                localStorage.setItem('access_token', newTokens.access_token)
+                localStorage.setItem('refresh_token', newTokens.refresh_token)
+                this.isRefreshing = false
+                this.refreshPromise = null
+              }
               
               // Retry original request with new token
               const retryHeaders: Record<string, string> = {
@@ -126,6 +140,8 @@ class ApiClient {
               return retryResponse.json()
             } catch (refreshError) {
               // Refresh failed, clear tokens and throw
+              this.isRefreshing = false
+              this.refreshPromise = null
               localStorage.removeItem('access_token')
               localStorage.removeItem('refresh_token')
               throw new Error('Session expired. Please login again.')
