@@ -623,12 +623,14 @@ export function DashboardPage() {
               onSave={handleSaveEntry}
               onAutoSave={handleAutoSave}
               onClose={() => {
+                // Capture current editing state before resetting
+                const wasEditing = isEditingEntry
                 setIsNewEntry(false)
                 setIsEditingEntry(false)
                 setWordCount(0)
                 setDraftEntryId(null)
                 // Keep selectedEntry if we were editing, to show it after cancel
-                if (!isEditingEntry) {
+                if (!wasEditing) {
                   setSelectedEntry(null)
                   setSearchParams({})
                 }

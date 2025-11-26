@@ -224,7 +224,8 @@ export const NewEntryEditor = forwardRef<NewEntryEditorHandle, NewEntryEditorPro
                 border: 'none',
                 backgroundColor: 'transparent',
                 color: 'var(--theme-text)',
-                fontSize: '16px', // Minimum 16px to prevent iOS zoom
+                // Minimum 16px on mobile to prevent iOS auto-zoom on focus
+                fontSize: isMobile ? '16px' : '16px',
                 fontWeight: 400,
                 lineHeight: 1.8,
                 padding: isMobile ? '12px 0' : '16px 0',

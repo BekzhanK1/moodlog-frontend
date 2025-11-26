@@ -103,17 +103,17 @@ class ApiClient {
               if (!this.isRefreshing) {
                 this.isRefreshing = true
                 this.refreshPromise = this.refreshToken(refreshTokenValue)
+                  .finally(() => {
+                    this.isRefreshing = false
+                    this.refreshPromise = null
+                  })
               }
               
               const newTokens = await this.refreshPromise!
               
-              // Only update tokens if this is the first refresh to complete
-              if (this.isRefreshing) {
-                localStorage.setItem('access_token', newTokens.access_token)
-                localStorage.setItem('refresh_token', newTokens.refresh_token)
-                this.isRefreshing = false
-                this.refreshPromise = null
-              }
+              // Update tokens in localStorage (safe to do multiple times with same values)
+              localStorage.setItem('access_token', newTokens.access_token)
+              localStorage.setItem('refresh_token', newTokens.refresh_token)
               
               // Retry original request with new token
               const retryHeaders: Record<string, string> = {
@@ -140,8 +140,6 @@ class ApiClient {
               return retryResponse.json()
             } catch (refreshError) {
               // Refresh failed, clear tokens and throw
-              this.isRefreshing = false
-              this.refreshPromise = null
               localStorage.removeItem('access_token')
               localStorage.removeItem('refresh_token')
               throw new Error('Session expired. Please login again.')
