@@ -48,6 +48,7 @@ export interface EntryCreateRequest {
   content: string
   tags?: string[] | null
   is_draft?: boolean
+  created_at?: string | null
 }
 
 export interface EntryUpdateRequest {

@@ -441,6 +441,9 @@ export function DashboardPage() {
       <Navbar
         userPicture={user?.picture}
         onMenuClick={() => setSidebarOpened(true)}
+        onImportComplete={() => {
+          fetchEntries(1, false)
+        }}
       />
 
       <Box style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>

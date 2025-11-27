@@ -1,18 +1,22 @@
 import { Box, Group, Text, ActionIcon, Avatar, Menu, Button } from '@mantine/core'
 import { useMediaQuery } from '@mantine/hooks'
-import { IconSettings, IconMenu2, IconUser, IconLogout, IconHome, IconBook } from '@tabler/icons-react'
+import { IconSettings, IconMenu2, IconUser, IconLogout, IconHome, IconBook, IconUpload } from '@tabler/icons-react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
+import { useState } from 'react'
+import { TelegramImport } from './TelegramImport'
 
 interface NavbarProps {
   userPicture?: string | null
   onMenuClick?: () => void
+  onImportComplete?: () => void
 }
 
-export function Navbar({ userPicture, onMenuClick }: NavbarProps) {
+export function Navbar({ userPicture, onMenuClick, onImportComplete }: NavbarProps) {
   const isMobile = useMediaQuery('(max-width: 768px)')
   const { logout, user } = useAuth()
   const navigate = useNavigate()
+  const [telegramImportOpened, setTelegramImportOpened] = useState(false)
 
   return (
     <Box
@@ -201,6 +205,38 @@ export function Navbar({ userPicture, onMenuClick }: NavbarProps) {
               >
                 Руководство
               </Menu.Item>
+              <Menu.Item
+                leftSection={<IconUpload size={16} />}
+                onClick={() => setTelegramImportOpened(true)}
+                style={{
+                  fontSize: '14px',
+                  color: 'var(--theme-text)',
+                  fontWeight: 400,
+                  padding: '8px 12px',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = 'var(--theme-hover)'
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent'
+                }}
+              >
+                <Group gap={4} align="center">
+                  <Text>Импорт из Telegram</Text>
+                  <Text
+                    size="xs"
+                    style={{
+                      color: 'var(--theme-text-secondary)',
+                      fontWeight: 600,
+                      backgroundColor: 'var(--theme-hover)',
+                      padding: '2px 6px',
+                      borderRadius: '4px',
+                    }}
+                  >
+                    BETA
+                  </Text>
+                </Group>
+              </Menu.Item>
               <Menu.Divider style={{ borderColor: 'var(--theme-border)' }} />
               <Menu.Item
                 leftSection={<IconLogout size={16} />}
@@ -225,6 +261,11 @@ export function Navbar({ userPicture, onMenuClick }: NavbarProps) {
           </Menu>
         </Group>
       </Group>
+      <TelegramImport
+        opened={telegramImportOpened}
+        onClose={() => setTelegramImportOpened(false)}
+        onImportComplete={onImportComplete}
+      />
     </Box>
   )
 }
