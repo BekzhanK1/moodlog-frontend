@@ -118,10 +118,12 @@ export function TelegramImport({ opened, onClose, onImportComplete }: TelegramIm
       .sort((a, b) => a - b)
       .map((i) => messages[i])
 
-    let success = 0
-    let failed = 0
+    // Parse and prepare entries for batch creation
+    const entriesToCreate = []
+    const invalidIndices: number[] = []
 
-    for (const message of selectedMessages) {
+    for (let i = 0; i < selectedMessages.length; i++) {
+      const message = selectedMessages[i]
       try {
         // Parse the date from Telegram export format
         // Telegram exports can use ISO format, Unix timestamp (seconds or milliseconds), or date_unixtime
@@ -145,32 +147,44 @@ export function TelegramImport({ opened, onClose, onImportComplete }: TelegramIm
         // Validate date
         if (isNaN(date.getTime())) {
           console.warn('Invalid date for message:', message)
-          failed++
+          invalidIndices.push(i)
           continue
         }
 
-        await apiClient.createEntry({
+        entriesToCreate.push({
           content: message.text,
           title: null,
           tags: null,
           is_draft: false,
           created_at: date.toISOString(),
         })
-        success++
       } catch (err) {
-        console.error('Error importing message:', err)
-        failed++
+        console.error('Error parsing message:', err)
+        invalidIndices.push(i)
       }
     }
 
-    setSuccessCount(success)
-    if (failed > 0) {
-      setError(`Импортировано: ${success}. Ошибок: ${failed}.`)
+    // Create entries in batch
+    let result: { total_created: number; total_failed: number } | null = null
+    try {
+      result = await apiClient.createEntriesBatch({
+        entries: entriesToCreate,
+      })
+
+      setSuccessCount(result.total_created)
+      
+      if (result.total_failed > 0 || invalidIndices.length > 0) {
+        const totalFailed = result.total_failed + invalidIndices.length
+        setError(`Импортировано: ${result.total_created}. Ошибок: ${totalFailed}.`)
+      }
+    } catch (err) {
+      console.error('Error importing messages:', err)
+      setError('Ошибка при импорте сообщений. Попробуйте еще раз.')
     }
 
     setImporting(false)
 
-    if (success > 0 && onImportComplete) {
+    if (result && result.total_created > 0 && onImportComplete) {
       // Wait a bit before calling onImportComplete to show success message
       setTimeout(() => {
         onImportComplete()
@@ -333,7 +347,16 @@ export function TelegramImport({ opened, onClose, onImportComplete }: TelegramIm
           </Alert>
         )}
 
-        {successCount !== null && (
+        {importing && (
+          <Box style={{ textAlign: 'center', padding: '20px 0' }}>
+            <Loader size="md" />
+            <Text mt="md" style={{ color: 'var(--theme-text-secondary)' }}>
+              Импорт сообщений...
+            </Text>
+          </Box>
+        )}
+
+        {successCount !== null && !importing && (
           <Alert
             icon={<IconCheck size={16} />}
             title="Успешно"

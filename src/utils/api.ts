@@ -58,6 +58,24 @@ export interface EntryUpdateRequest {
   is_draft?: boolean
 }
 
+export interface BatchEntryCreateRequest {
+  entries: EntryCreateRequest[]
+}
+
+export interface BatchEntryResponse {
+  created: EntryResponse[]
+  failed: Array<{
+    entry: {
+      content: string
+      created_at: string | null
+    }
+    error: string
+  }>
+  total_requested: number
+  total_created: number
+  total_failed: number
+}
+
 class ApiClient {
   private baseUrl: string
   private isRefreshing: boolean = false
@@ -213,6 +231,13 @@ class ApiClient {
     return this.request<EntryResponse>('/entries/', {
       method: 'POST',
       body: JSON.stringify(entryData),
+    })
+  }
+
+  async createEntriesBatch(batchData: BatchEntryCreateRequest): Promise<BatchEntryResponse> {
+    return this.request<BatchEntryResponse>('/entries/batch', {
+      method: 'POST',
+      body: JSON.stringify(batchData),
     })
   }
 
