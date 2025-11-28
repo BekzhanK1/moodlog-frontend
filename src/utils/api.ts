@@ -43,6 +43,25 @@ export interface EntryListResponse {
   total_pages: number
 }
 
+export interface EmotionalProfile {
+  average_mood: number
+  dominant_emotions: string[]
+  emotional_range: string
+}
+
+export interface WritingStyle {
+  average_length: string
+  tone: string
+  common_patterns: string[]
+}
+
+export interface UserCharacteristicResponse {
+  general_description?: string | null
+  main_themes?: string[] | null
+  emotional_profile?: EmotionalProfile | null
+  writing_style?: WritingStyle | null
+}
+
 export interface EntryCreateRequest {
   title?: string | null
   content: string
@@ -469,6 +488,10 @@ class ApiClient {
       per_page: number
       total_pages: number
     }>(`/insights?${params.toString()}`)
+  }
+
+  async getUserCharacteristics(): Promise<UserCharacteristicResponse> {
+    return this.request<UserCharacteristicResponse>('/auth/characteristics')
   }
 }
 

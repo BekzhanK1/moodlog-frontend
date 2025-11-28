@@ -1,33 +1,45 @@
-import { Box, Container, Title, Stack, Group, Button, Text, Card, Divider, Avatar, Badge } from '@mantine/core'
+import { Box, Container, Title, Stack, Group, Button, Text, Card, Divider, Avatar, Badge, Loader } from '@mantine/core'
 import { useMediaQuery } from '@mantine/hooks'
 import { IconArrowLeft, IconBrain, IconHeart, IconPencil, IconSparkles } from '@tabler/icons-react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import { apiClient, UserCharacteristicResponse } from '../utils/api'
+import { useEffect, useState } from 'react'
 
 export function ProfilePage() {
   const navigate = useNavigate()
   const { user } = useAuth()
   const isMobile = useMediaQuery('(max-width: 768px)')
+  const [characteristics, setCharacteristics] = useState<UserCharacteristicResponse | null>(null)
+  const [loading, setLoading] = useState(true)
 
-  // TODO: This will be fetched from API when backend is ready
-  // For now, showing example structure
-  const userCharacteristic = {
-    generalDescription: "Вы — человек, который ценит самоанализ и рефлексию. Ваш дневник показывает глубокий интерес к внутреннему миру и стремление понять свои эмоции и переживания.",
-    mainThemes: [
-      "Личностный рост",
-      "Работа и карьера",
-      "Отношения",
-      "Творчество",
-    ],
-    emotionalProfile: {
-      averageMood: 0.3,
-      dominantEmotions: ["Спокойствие", "Мотивация", "Размышление"],
-      emotionalRange: "Умеренный",
+  useEffect(() => {
+    const fetchCharacteristics = async () => {
+      try {
+        const data = await apiClient.getUserCharacteristics()
+        setCharacteristics(data)
+      } catch (error) {
+        console.error('Failed to fetch characteristics:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchCharacteristics()
+  }, [])
+
+  // Default characteristics if not loaded or empty
+  const userCharacteristic = characteristics || {
+    general_description: "Начните вести дневник, и здесь появится ваша характеристика.",
+    main_themes: [],
+    emotional_profile: {
+      average_mood: 0.0,
+      dominant_emotions: [],
+      emotional_range: "Не определено",
     },
-    writingStyle: {
-      averageLength: "Средний",
-      tone: "Рефлексивный и вдумчивый",
-      commonPatterns: ["Вопросы к себе", "Анализ событий", "Планы на будущее"],
+    writing_style: {
+      average_length: "Не определено",
+      tone: "Не определено",
+      common_patterns: [],
     },
   }
 
@@ -194,241 +206,266 @@ export function ProfilePage() {
                     Общая характеристика
                   </Text>
                 </Group>
-                <Text
-                  style={{
-                    fontSize: isMobile ? '14px' : '15px',
-                    lineHeight: 1.7,
-                    color: 'var(--theme-text)',
-                  }}
-                >
-                  {userCharacteristic.generalDescription}
-                </Text>
+                {loading ? (
+                  <Group gap="xs">
+                    <Loader size="sm" color="var(--theme-primary)" />
+                    <Text
+                      style={{
+                        fontSize: isMobile ? '14px' : '15px',
+                        color: 'var(--theme-text-secondary)',
+                        fontStyle: 'italic',
+                      }}
+                    >
+                      Загрузка характеристики...
+                    </Text>
+                  </Group>
+                ) : (
+                  <Text
+                    style={{
+                      fontSize: isMobile ? '14px' : '15px',
+                      lineHeight: 1.7,
+                      color: 'var(--theme-text)',
+                    }}
+                  >
+                    {userCharacteristic.general_description || "Начните вести дневник, и здесь появится ваша характеристика."}
+                  </Text>
+                )}
               </Box>
 
               <Divider style={{ borderColor: 'var(--theme-border)' }} />
 
               {/* Main Themes */}
-              <Box>
-                <Group gap="xs" align="center" style={{ marginBottom: '12px' }}>
-                  <IconPencil size={18} style={{ color: 'var(--theme-primary)' }} />
-                  <Text
-                    style={{
-                      fontSize: isMobile ? '14px' : '16px',
-                      fontWeight: 500,
-                      color: 'var(--theme-text)',
-                    }}
-                  >
-                    Основные темы
-                  </Text>
-                </Group>
-                <Group gap="xs" style={{ flexWrap: 'wrap' }}>
-                  {userCharacteristic.mainThemes.map((theme, idx) => (
-                    <Badge
-                      key={idx}
-                      variant="light"
-                      radius="sm"
-                      style={{
-                        backgroundColor: 'var(--theme-hover)',
-                        color: 'var(--theme-text-secondary)',
-                        border: '1px solid var(--theme-border)',
-                        fontWeight: 400,
-                        fontSize: '13px',
-                        padding: '6px 12px',
-                      }}
-                    >
-                      {theme}
-                    </Badge>
-                  ))}
-                </Group>
-              </Box>
-
-              <Divider style={{ borderColor: 'var(--theme-border)' }} />
-
-              {/* Emotional Profile */}
-              <Box>
-                <Group gap="xs" align="center" style={{ marginBottom: '12px' }}>
-                  <IconHeart size={18} style={{ color: 'var(--theme-primary)' }} />
-                  <Text
-                    style={{
-                      fontSize: isMobile ? '14px' : '16px',
-                      fontWeight: 500,
-                      color: 'var(--theme-text)',
-                    }}
-                  >
-                    Эмоциональный профиль
-                  </Text>
-                </Group>
-                <Stack gap="sm">
-                  <Group gap="md" align="center">
+              {!loading && (
+                <Box>
+                  <Group gap="xs" align="center" style={{ marginBottom: '12px' }}>
+                    <IconPencil size={18} style={{ color: 'var(--theme-primary)' }} />
                     <Text
-                      size="sm"
                       style={{
-                        color: 'var(--theme-text-secondary)',
-                        minWidth: '120px',
+                        fontSize: isMobile ? '14px' : '16px',
+                        fontWeight: 500,
+                        color: 'var(--theme-text)',
                       }}
                     >
-                      Среднее настроение:
+                      Основные темы
                     </Text>
-                    <Group gap="xs" align="center">
-                      <Text
+                  </Group>
+                  <Group gap="xs" style={{ flexWrap: 'wrap' }}>
+                    {(userCharacteristic.main_themes || []).map((theme, idx) => (
+                      <Badge
+                        key={idx}
+                        variant="light"
+                        radius="sm"
                         style={{
-                          fontSize: '16px',
-                          fontWeight: 500,
-                          fontFamily: 'monospace',
-                          color: getMoodColor(userCharacteristic.emotionalProfile.averageMood),
-                        }}
-                      >
-                        {userCharacteristic.emotionalProfile.averageMood.toFixed(2)}
-                      </Text>
-                      <Text
-                        size="sm"
-                        style={{
+                          backgroundColor: 'var(--theme-hover)',
                           color: 'var(--theme-text-secondary)',
+                          border: '1px solid var(--theme-border)',
+                          fontWeight: 400,
+                          fontSize: '13px',
+                          padding: '6px 12px',
                         }}
                       >
-                        ({getMoodLabel(userCharacteristic.emotionalProfile.averageMood)})
+                        {theme}
+                      </Badge>
+                    ))}
+                  </Group>
+                </Box>
+              )}
+
+              {!loading && userCharacteristic.emotional_profile && (
+                <>
+                  <Divider style={{ borderColor: 'var(--theme-border)' }} />
+
+                  {/* Emotional Profile */}
+                  <Box>
+                    <Group gap="xs" align="center" style={{ marginBottom: '12px' }}>
+                      <IconHeart size={18} style={{ color: 'var(--theme-primary)' }} />
+                      <Text
+                        style={{
+                          fontSize: isMobile ? '14px' : '16px',
+                          fontWeight: 500,
+                          color: 'var(--theme-text)',
+                        }}
+                      >
+                        Эмоциональный профиль
                       </Text>
                     </Group>
-                  </Group>
-                  <Group gap="md" align="center">
-                    <Text
-                      size="sm"
-                      style={{
-                        color: 'var(--theme-text-secondary)',
-                        minWidth: '120px',
-                      }}
-                    >
-                      Преобладающие эмоции:
-                    </Text>
-                    <Group gap="xs" style={{ flexWrap: 'wrap' }}>
-                      {userCharacteristic.emotionalProfile.dominantEmotions.map((emotion, idx) => (
-                        <Badge
-                          key={idx}
-                          variant="light"
-                          radius="sm"
+                    <Stack gap="sm">
+                      <Group gap="md" align="center">
+                        <Text
+                          size="sm"
                           style={{
-                            backgroundColor: 'var(--theme-hover)',
                             color: 'var(--theme-text-secondary)',
-                            border: '1px solid var(--theme-border)',
-                            fontWeight: 400,
-                            fontSize: '12px',
-                            padding: '4px 10px',
+                            minWidth: '120px',
                           }}
                         >
-                          {emotion}
-                        </Badge>
-                      ))}
-                    </Group>
-                  </Group>
-                  <Group gap="md" align="center">
-                    <Text
-                      size="sm"
-                      style={{
-                        color: 'var(--theme-text-secondary)',
-                        minWidth: '120px',
-                      }}
-                    >
-                      Эмоциональный диапазон:
-                    </Text>
-                    <Text
-                      size="sm"
-                      style={{
-                        color: 'var(--theme-text)',
-                      }}
-                    >
-                      {userCharacteristic.emotionalProfile.emotionalRange}
-                    </Text>
-                  </Group>
-                </Stack>
-              </Box>
-
-              <Divider style={{ borderColor: 'var(--theme-border)' }} />
-
-              {/* Writing Style */}
-              <Box>
-                <Group gap="xs" align="center" style={{ marginBottom: '12px' }}>
-                  <IconPencil size={18} style={{ color: 'var(--theme-primary)' }} />
-                  <Text
-                    style={{
-                      fontSize: isMobile ? '14px' : '16px',
-                      fontWeight: 500,
-                      color: 'var(--theme-text)',
-                    }}
-                  >
-                    Стиль письма
-                  </Text>
-                </Group>
-                <Stack gap="sm">
-                  <Group gap="md" align="center">
-                    <Text
-                      size="sm"
-                      style={{
-                        color: 'var(--theme-text-secondary)',
-                        minWidth: '120px',
-                      }}
-                    >
-                      Средняя длина:
-                    </Text>
-                    <Text
-                      size="sm"
-                      style={{
-                        color: 'var(--theme-text)',
-                      }}
-                    >
-                      {userCharacteristic.writingStyle.averageLength}
-                    </Text>
-                  </Group>
-                  <Group gap="md" align="flex-start">
-                    <Text
-                      size="sm"
-                      style={{
-                        color: 'var(--theme-text-secondary)',
-                        minWidth: '120px',
-                      }}
-                    >
-                      Тон:
-                    </Text>
-                    <Text
-                      size="sm"
-                      style={{
-                        color: 'var(--theme-text)',
-                      }}
-                    >
-                      {userCharacteristic.writingStyle.tone}
-                    </Text>
-                  </Group>
-                  <Group gap="md" align="flex-start">
-                    <Text
-                      size="sm"
-                      style={{
-                        color: 'var(--theme-text-secondary)',
-                        minWidth: '120px',
-                      }}
-                    >
-                      Частые паттерны:
-                    </Text>
-                    <Group gap="xs" style={{ flexWrap: 'wrap' }}>
-                      {userCharacteristic.writingStyle.commonPatterns.map((pattern, idx) => (
-                        <Badge
-                          key={idx}
-                          variant="light"
-                          radius="sm"
+                          Среднее настроение:
+                        </Text>
+                        <Group gap="xs" align="center">
+                          <Text
+                            style={{
+                              fontSize: '16px',
+                              fontWeight: 500,
+                              fontFamily: 'monospace',
+                              color: getMoodColor(userCharacteristic.emotional_profile?.average_mood || 0),
+                            }}
+                          >
+                            {(userCharacteristic.emotional_profile?.average_mood || 0).toFixed(2)}
+                          </Text>
+                          <Text
+                            size="sm"
+                            style={{
+                              color: 'var(--theme-text-secondary)',
+                            }}
+                          >
+                            ({getMoodLabel(userCharacteristic.emotional_profile?.average_mood || 0)})
+                          </Text>
+                        </Group>
+                      </Group>
+                      <Group gap="md" align="center">
+                        <Text
+                          size="sm"
                           style={{
-                            backgroundColor: 'var(--theme-hover)',
                             color: 'var(--theme-text-secondary)',
-                            border: '1px solid var(--theme-border)',
-                            fontWeight: 400,
-                            fontSize: '12px',
-                            padding: '4px 10px',
+                            minWidth: '120px',
                           }}
                         >
-                          {pattern}
-                        </Badge>
-                      ))}
+                          Преобладающие эмоции:
+                        </Text>
+                        <Group gap="xs" style={{ flexWrap: 'wrap' }}>
+                          {(userCharacteristic.emotional_profile?.dominant_emotions || []).map((emotion, idx) => (
+                            <Badge
+                              key={idx}
+                              variant="light"
+                              radius="sm"
+                              style={{
+                                backgroundColor: 'var(--theme-hover)',
+                                color: 'var(--theme-text-secondary)',
+                                border: '1px solid var(--theme-border)',
+                                fontWeight: 400,
+                                fontSize: '12px',
+                                padding: '4px 10px',
+                              }}
+                            >
+                              {emotion}
+                            </Badge>
+                          ))}
+                        </Group>
+                      </Group>
+                      <Group gap="md" align="center">
+                        <Text
+                          size="sm"
+                          style={{
+                            color: 'var(--theme-text-secondary)',
+                            minWidth: '120px',
+                          }}
+                        >
+                          Эмоциональный диапазон:
+                        </Text>
+                        <Text
+                          size="sm"
+                          style={{
+                            color: 'var(--theme-text)',
+                          }}
+                        >
+                          {userCharacteristic.emotional_profile?.emotional_range || "Не определено"}
+                        </Text>
+                      </Group>
+                    </Stack>
+                  </Box>
+                </>
+              )}
+
+              {!loading && userCharacteristic.writing_style && (
+                <>
+                  <Divider style={{ borderColor: 'var(--theme-border)' }} />
+
+                  {/* Writing Style */}
+                  <Box>
+                    <Group gap="xs" align="center" style={{ marginBottom: '12px' }}>
+                      <IconPencil size={18} style={{ color: 'var(--theme-primary)' }} />
+                      <Text
+                        style={{
+                          fontSize: isMobile ? '14px' : '16px',
+                          fontWeight: 500,
+                          color: 'var(--theme-text)',
+                        }}
+                      >
+                        Стиль письма
+                      </Text>
                     </Group>
-                  </Group>
-                </Stack>
-              </Box>
+                    <Stack gap="sm">
+                      <Group gap="md" align="center">
+                        <Text
+                          size="sm"
+                          style={{
+                            color: 'var(--theme-text-secondary)',
+                            minWidth: '120px',
+                          }}
+                        >
+                          Средняя длина:
+                        </Text>
+                        <Text
+                          size="sm"
+                          style={{
+                            color: 'var(--theme-text)',
+                          }}
+                        >
+                          {userCharacteristic.writing_style?.average_length || "Не определено"}
+                        </Text>
+                      </Group>
+                      <Group gap="md" align="flex-start">
+                        <Text
+                          size="sm"
+                          style={{
+                            color: 'var(--theme-text-secondary)',
+                            minWidth: '120px',
+                          }}
+                        >
+                          Тон:
+                        </Text>
+                        <Text
+                          size="sm"
+                          style={{
+                            color: 'var(--theme-text)',
+                          }}
+                        >
+                          {userCharacteristic.writing_style?.tone || "Не определено"}
+                        </Text>
+                      </Group>
+                      <Group gap="md" align="flex-start">
+                        <Text
+                          size="sm"
+                          style={{
+                            color: 'var(--theme-text-secondary)',
+                            minWidth: '120px',
+                          }}
+                        >
+                          Частые паттерны:
+                        </Text>
+                        <Group gap="xs" style={{ flexWrap: 'wrap' }}>
+                          {(userCharacteristic.writing_style?.common_patterns || []).map((pattern, idx) => (
+                            <Badge
+                              key={idx}
+                              variant="light"
+                              radius="sm"
+                              style={{
+                                backgroundColor: 'var(--theme-hover)',
+                                color: 'var(--theme-text-secondary)',
+                                border: '1px solid var(--theme-border)',
+                                fontWeight: 400,
+                                fontSize: '12px',
+                                padding: '4px 10px',
+                              }}
+                            >
+                              {pattern}
+                            </Badge>
+                          ))}
+                        </Group>
+                      </Group>
+                    </Stack>
+                  </Box>
+                </>
+              )}
             </Stack>
           </Card>
 
