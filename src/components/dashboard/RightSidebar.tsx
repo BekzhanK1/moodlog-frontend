@@ -6,6 +6,7 @@ import {
   Group,
   Badge,
   Divider,
+  Loader,
 } from '@mantine/core'
 import {
   IconChevronRight,
@@ -21,9 +22,11 @@ interface RightSidebarProps {
   isNewEntry?: boolean
   onTagClick?: (tag: string) => void
   searchQuery?: string
+  writingQuestions?: string[]
+  questionsLoading?: boolean
 }
 
-export function RightSidebar({ entry, wordCount, isNewEntry, onTagClick, searchQuery }: RightSidebarProps) {
+export function RightSidebar({ entry, wordCount, isNewEntry, onTagClick, searchQuery, writingQuestions = [], questionsLoading = false }: RightSidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false)
 
   const formatDate = (dateString: string) => {
@@ -119,18 +122,52 @@ export function RightSidebar({ entry, wordCount, isNewEntry, onTagClick, searchQ
 
               <Divider style={{ borderColor: 'var(--theme-border)' }} />
 
-              {/* Static question */}
+              {/* AI Questions */}
               <Box>
                 <Text
-                  size="sm"
+                  size="xs"
                   style={{
-                    color: 'var(--theme-text)',
-                    fontWeight: 400,
-                    lineHeight: 1.6,
+                    color: 'var(--theme-text-secondary)',
+                    fontWeight: 600,
+                    marginBottom: '12px',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px',
                   }}
                 >
-                  О чем вы думали в последнее время?
+                  Вопросы от ИИ
                 </Text>
+                {questionsLoading ? (
+                  <Group gap="xs" align="center">
+                    <Loader size="sm" color="var(--theme-primary)" />
+                    <Text
+                      size="sm"
+                      style={{
+                        color: 'var(--theme-text-secondary)',
+                        fontStyle: 'italic',
+                      }}
+                    >
+                      Загрузка вопросов...
+                    </Text>
+                  </Group>
+                ) : (
+                  <Stack gap="sm">
+                    {writingQuestions.map((question, index) => (
+                      <Text
+                        key={index}
+                        size="sm"
+                        style={{
+                          color: 'var(--theme-text)',
+                          fontWeight: 400,
+                          lineHeight: 1.6,
+                          opacity: 0,
+                          animation: `fadeInUp 0.6s ease-out ${index * 0.15 + 0.2}s forwards`,
+                        }}
+                      >
+                        {question}
+                      </Text>
+                    ))}
+                  </Stack>
+                )}
               </Box>
             </>
           ) : entry ? (

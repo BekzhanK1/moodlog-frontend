@@ -34,6 +34,8 @@ export function DashboardPage() {
   const [deletingEntryId, setDeletingEntryId] = useState<string | null>(null)
   const [draftEntryId, setDraftEntryId] = useState<string | null>(null)
   const [showAudioRecorder, setShowAudioRecorder] = useState(false)
+  const [writingQuestions, setWritingQuestions] = useState<string[]>([])
+  const [questionsLoading, setQuestionsLoading] = useState<boolean>(true)
   const editorRef = useRef<NewEntryEditorHandle>(null)
   const hasAutoOpenedRef = useRef(false) // Track if we've auto-opened editor on initial load
   const isMobile = useMediaQuery('(max-width: 768px)')
@@ -86,6 +88,30 @@ export function DashboardPage() {
       fetchEntries(1, false)
     }
   }, [isAuthenticated, authLoading, fetchEntries])
+
+  // Fetch writing questions when entries change
+  useEffect(() => {
+    const fetchQuestions = async () => {
+      if (isAuthenticated && !authLoading) {
+        setQuestionsLoading(true)
+        try {
+          const response = await apiClient.getWritingQuestion(5, 3)
+          setWritingQuestions(response.questions)
+        } catch (error) {
+          console.error('Failed to fetch writing questions:', error)
+          // Fallback to default questions on error
+          setWritingQuestions([
+            'О чем вы думали в последнее время?',
+            'Что вас сейчас волнует?',
+            'Как вы себя чувствуете сегодня?'
+          ])
+        } finally {
+          setQuestionsLoading(false)
+        }
+      }
+    }
+    fetchQuestions()
+  }, [isAuthenticated, authLoading, entries.length]) // Update when entries change
 
   // Refetch entries when search query changes
   useEffect(() => {
@@ -685,6 +711,8 @@ export function DashboardPage() {
               buttonText={isEditingEntry ? 'Сохранить изменения' : (draftEntryId ? 'Опубликовать' : 'Сохранить')}
               draftEntryId={draftEntryId}
               isEditing={isEditingEntry}
+              writingQuestions={writingQuestions}
+              questionsLoading={questionsLoading}
             />
           ) : selectedEntry ? (
             <Box
@@ -718,6 +746,8 @@ export function DashboardPage() {
             wordCount={wordCount}
             isNewEntry={isNewEntry}
             onTagClick={handleTagClick}
+            writingQuestions={writingQuestions}
+            questionsLoading={questionsLoading}
           />
         )}
       </Box>

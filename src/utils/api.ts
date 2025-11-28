@@ -227,6 +227,10 @@ class ApiClient {
     return this.request<EntryListResponse>(`/entries/?page=${page}&per_page=${perPage}`)
   }
 
+  async getWritingQuestion(n: number = 10, numQuestions: number = 3): Promise<{ questions: string[] }> {
+    return this.request<{ questions: string[] }>(`/entries/question?n=${n}&num_questions=${numQuestions}`)
+  }
+
   async createEntry(entryData: EntryCreateRequest): Promise<EntryResponse> {
     return this.request<EntryResponse>('/entries/', {
       method: 'POST',

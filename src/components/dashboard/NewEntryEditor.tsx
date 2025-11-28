@@ -1,6 +1,6 @@
 import { useState, forwardRef, useImperativeHandle, useEffect, useRef } from 'react'
 import * as React from 'react'
-import { Box, TextInput, Textarea, Stack, Button, Group, Divider, Text } from '@mantine/core'
+import { Box, TextInput, Textarea, Stack, Button, Group, Divider, Text, Loader } from '@mantine/core'
 import { useMediaQuery } from '@mantine/hooks'
 import { IconCheck, IconLoader, IconX } from '@tabler/icons-react'
 
@@ -23,6 +23,8 @@ interface NewEntryEditorProps {
   buttonText?: string
   draftEntryId?: string | null
   isEditing?: boolean // Whether we're editing an existing entry (not creating new)
+  writingQuestions?: string[] // Dynamic questions to display
+  questionsLoading?: boolean // Whether questions are loading
 }
 
 export const NewEntryEditor = forwardRef<NewEntryEditorHandle, NewEntryEditorProps>(
@@ -39,6 +41,8 @@ export const NewEntryEditor = forwardRef<NewEntryEditorHandle, NewEntryEditorPro
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     draftEntryId: _externalDraftEntryId = null,
     isEditing = false,
+    writingQuestions = [],
+    questionsLoading = false,
   }, ref) {
     const isMobile = useMediaQuery('(max-width: 768px)')
     const [title, setTitle] = useState(initialTitle)
@@ -329,15 +333,49 @@ export const NewEntryEditor = forwardRef<NewEntryEditorHandle, NewEntryEditorPro
 
                 <Box>
                   <Text
-                    size="sm"
+                    size="xs"
                     style={{
-                      color: 'var(--theme-text)',
-                      fontWeight: 400,
-                      lineHeight: 1.6,
+                      color: 'var(--theme-text-secondary)',
+                      fontWeight: 600,
+                      marginBottom: '12px',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px',
                     }}
                   >
-                    О чем вы думали в последнее время?
+                    Вопросы от ИИ
                   </Text>
+                  {questionsLoading ? (
+                    <Group gap="xs" align="center">
+                      <Loader size="sm" color="var(--theme-primary)" />
+                      <Text
+                        size="sm"
+                        style={{
+                          color: 'var(--theme-text-secondary)',
+                          fontStyle: 'italic',
+                        }}
+                      >
+                        Загрузка вопросов...
+                      </Text>
+                    </Group>
+                  ) : (
+                    <Stack gap="sm">
+                      {writingQuestions.map((question, index) => (
+                        <Text
+                          key={index}
+                          size="sm"
+                          style={{
+                            color: 'var(--theme-text)',
+                            fontWeight: 400,
+                            lineHeight: 1.6,
+                            opacity: 0,
+                            animation: `fadeInUp 0.6s ease-out ${index * 0.15 + 0.2}s forwards`,
+                          }}
+                        >
+                          {question}
+                        </Text>
+                      ))}
+                    </Stack>
+                  )}
                 </Box>
               </Stack>
             </>
