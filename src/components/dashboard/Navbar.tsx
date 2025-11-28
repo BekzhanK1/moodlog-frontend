@@ -1,4 +1,4 @@
-import { Box, Group, Text, ActionIcon, Avatar, Menu, Button } from '@mantine/core'
+import { Box, Group, Text, ActionIcon, Avatar, Menu } from '@mantine/core'
 import { useMediaQuery } from '@mantine/hooks'
 import { IconSettings, IconMenu2, IconUser, IconLogout, IconBook, IconUpload, IconMicrophone } from '@tabler/icons-react'
 import { useNavigate } from 'react-router-dom'
@@ -249,19 +249,17 @@ export function Navbar({ userPicture, onMenuClick, onImportComplete, onAudioReco
               <Menu.Item
                 leftSection={<IconLogout size={16} />}
                 onClick={logout}
-                styles={{
-                  root: {
-                    fontSize: '14px',
-                    color: '#dc2626',
-                    padding: '10px 12px',
-                    backgroundColor: 'var(--theme-bg)',
-                    '&:hover': {
-                      backgroundColor: '#fff5f5',
-                    },
-                    '&[data-hovered]': {
-                      backgroundColor: '#fff5f5',
-                    },
-                  },
+                style={{
+                  fontSize: '14px',
+                  color: '#dc2626',
+                  padding: '10px 12px',
+                  backgroundColor: 'var(--theme-bg)',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = '#fff5f5'
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'var(--theme-bg)'
                 }}
               >
                 Выйти

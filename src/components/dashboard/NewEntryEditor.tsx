@@ -240,7 +240,7 @@ export const NewEntryEditor = forwardRef<NewEntryEditorHandle, NewEntryEditorPro
             variant="unstyled"
             minRows={isMobile ? 15 : 20}
             autosize
-            onKeyDown={(e) => {
+            onKeyDown={() => {
               // Allow immediate typing without needing to click
               if (!textareaRef.current?.matches(':focus')) {
                 textareaRef.current?.focus()
