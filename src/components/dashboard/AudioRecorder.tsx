@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { Button, Group, Text, Box, Stack, Alert, Modal, Loader, Slider, ActionIcon, Progress } from '@mantine/core'
+import { Button, Group, Text, Box, Stack, Alert, Modal, Loader, Slider, ActionIcon } from '@mantine/core'
 import { useMediaQuery } from '@mantine/hooks'
 import { IconMicrophone, IconPlayerStop, IconCheck, IconX, IconAlertCircle, IconRefresh, IconPlayerPlay, IconPlayerPause } from '@tabler/icons-react'
 import { apiClient } from '../../utils/api'
@@ -13,7 +13,6 @@ interface AudioRecorderProps {
 export function AudioRecorder({ onRecordingComplete, onClose, title }: AudioRecorderProps) {
   const isMobile = useMediaQuery('(max-width: 768px)')
   const [isRecording, setIsRecording] = useState(false)
-  const [isPaused, setIsPaused] = useState(false)
   const [recordingTime, setRecordingTime] = useState(0)
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null)
   const [isUploading, setIsUploading] = useState(false)
@@ -343,7 +342,6 @@ export function AudioRecorder({ onRecordingComplete, onClose, title }: AudioReco
         }
         
         setIsRecording(false)
-        setIsPaused(false)
         
         if (timerRef.current) {
           clearInterval(timerRef.current)
@@ -354,7 +352,6 @@ export function AudioRecorder({ onRecordingComplete, onClose, title }: AudioReco
         setError('Ошибка при остановке записи. Попробуйте еще раз.')
         // Force cleanup
         setIsRecording(false)
-        setIsPaused(false)
         if (timerRef.current) {
           clearInterval(timerRef.current)
           timerRef.current = null
@@ -833,9 +830,6 @@ export function AudioRecorder({ onRecordingComplete, onClose, title }: AudioReco
                     },
                   },
                   label: {
-                    color: 'var(--theme-bg)',
-                  },
-                  loading: {
                     color: 'var(--theme-bg)',
                   },
                 }}

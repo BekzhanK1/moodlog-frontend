@@ -558,9 +558,6 @@ export function TelegramImport({ opened, onClose, onImportComplete }: TelegramIm
                     label: {
                       color: 'var(--theme-bg)',
                     },
-                    loading: {
-                      color: 'var(--theme-bg)',
-                    },
                   }}
                 >
                   Импортировать выбранные
