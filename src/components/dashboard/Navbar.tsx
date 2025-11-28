@@ -1,6 +1,6 @@
 import { Box, Group, Text, ActionIcon, Avatar, Menu, Button } from '@mantine/core'
 import { useMediaQuery } from '@mantine/hooks'
-import { IconSettings, IconMenu2, IconUser, IconLogout, IconHome, IconBook, IconUpload } from '@tabler/icons-react'
+import { IconSettings, IconMenu2, IconUser, IconLogout, IconHome, IconBook, IconUpload, IconMicrophone } from '@tabler/icons-react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { useState } from 'react'
@@ -10,9 +10,10 @@ interface NavbarProps {
   userPicture?: string | null
   onMenuClick?: () => void
   onImportComplete?: () => void
+  onAudioRecord?: () => void
 }
 
-export function Navbar({ userPicture, onMenuClick, onImportComplete }: NavbarProps) {
+export function Navbar({ userPicture, onMenuClick, onImportComplete, onAudioRecord }: NavbarProps) {
   const isMobile = useMediaQuery('(max-width: 768px)')
   const { logout, user } = useAuth()
   const navigate = useNavigate()
@@ -32,7 +33,7 @@ export function Navbar({ userPicture, onMenuClick, onImportComplete }: NavbarPro
         zIndex: 100,
       }}
     >
-      <Group justify="space-between" style={{ width: '100%' }}>
+        <Group justify="space-between" style={{ width: '100%' }}>
         <Group gap={isMobile ? 'sm' : 'md'}>
           {isMobile && onMenuClick && (
             <ActionIcon
@@ -70,6 +71,28 @@ export function Navbar({ userPicture, onMenuClick, onImportComplete }: NavbarPro
         </Group>
 
         <Group gap={isMobile ? 'xs' : 'md'}>
+          {onAudioRecord && (
+            <ActionIcon
+              variant="subtle"
+              radius="md"
+              size={isMobile ? 'lg' : 'md'}
+              onClick={onAudioRecord}
+              style={{
+                color: 'var(--theme-text)',
+                backgroundColor: 'transparent',
+                border: '1px solid var(--theme-border)',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = 'var(--theme-hover)'
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'transparent'
+              }}
+              title="Записать аудио"
+            >
+              <IconMicrophone size={isMobile ? 22 : 20} />
+            </ActionIcon>
+          )}
           <Button
             variant="subtle"
             leftSection={<IconHome size={16} />}

@@ -10,6 +10,7 @@ import { Sidebar } from '../components/dashboard/Sidebar'
 import { EntryView } from '../components/dashboard/EntryView'
 import { NewEntryEditor, NewEntryEditorHandle } from '../components/dashboard/NewEntryEditor'
 import { RightSidebar } from '../components/dashboard/RightSidebar'
+import { AudioRecorder } from '../components/dashboard/AudioRecorder'
 
 export function DashboardPage() {
   const navigate = useNavigate()
@@ -32,6 +33,7 @@ export function DashboardPage() {
   const [isDeleting, setIsDeleting] = useState(false)
   const [deletingEntryId, setDeletingEntryId] = useState<string | null>(null)
   const [draftEntryId, setDraftEntryId] = useState<string | null>(null)
+  const [showAudioRecorder, setShowAudioRecorder] = useState(false)
   const editorRef = useRef<NewEntryEditorHandle>(null)
   const isMobile = useMediaQuery('(max-width: 768px)')
 
@@ -444,6 +446,7 @@ export function DashboardPage() {
         onImportComplete={() => {
           fetchEntries(1, false)
         }}
+        onAudioRecord={() => setShowAudioRecorder(true)}
       />
 
       <Box style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
@@ -487,7 +490,26 @@ export function DashboardPage() {
             paddingBottom: isMobile ? '100px' : '0',
           }}
         >
-          {error && (
+          {showAudioRecorder ? (
+            <AudioRecorder
+              onRecordingComplete={async (entryId) => {
+                setShowAudioRecorder(false)
+                // Refresh entries
+                await fetchEntries(1, false)
+                // Load and select the new entry
+                try {
+                  const newEntry = await apiClient.getEntryById(entryId)
+                  setSelectedEntry(newEntry)
+                  setSearchParams({ entry: entryId })
+                  setIsNewEntry(false)
+                  setIsEditingEntry(false)
+                } catch (err) {
+                  console.error('Error loading new entry:', err)
+                }
+              }}
+              onClose={() => setShowAudioRecorder(false)}
+            />
+          ) : error ? (
             <Box style={{ padding: isMobile ? '16px' : '20px 40px' }}>
               <Alert
                 icon={<IconAlertCircle size={16} />}
@@ -505,8 +527,7 @@ export function DashboardPage() {
                 {error}
               </Alert>
             </Box>
-          )}
-          {isAnalyzing ? (
+          ) : isAnalyzing ? (
             <Box
               style={{
                 minHeight: 'calc(100vh - 120px)',

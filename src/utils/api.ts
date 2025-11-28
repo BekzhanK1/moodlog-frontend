@@ -241,6 +241,89 @@ class ApiClient {
     })
   }
 
+  async createEntryFromAudio(
+    audioFile: File,
+    title?: string,
+    tags?: string[]
+  ): Promise<EntryResponse> {
+    const url = `${this.baseUrl}/entries/from-audio`
+    const token = localStorage.getItem('access_token')
+
+    const formData = new FormData()
+    formData.append('audio_file', audioFile)
+    if (title) {
+      formData.append('title', title)
+    }
+    if (tags && tags.length > 0) {
+      tags.forEach(tag => formData.append('tags', tag))
+    }
+
+    const headers: Record<string, string> = {}
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`
+    }
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers,
+      body: formData,
+    })
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        const refreshTokenValue = localStorage.getItem('refresh_token')
+        if (refreshTokenValue) {
+          try {
+            if (!this.isRefreshing) {
+              this.isRefreshing = true
+              this.refreshPromise = this.refreshToken(refreshTokenValue)
+                .finally(() => {
+                  this.isRefreshing = false
+                  this.refreshPromise = null
+                })
+            }
+            
+            const newTokens = await this.refreshPromise!
+            localStorage.setItem('access_token', newTokens.access_token)
+            localStorage.setItem('refresh_token', newTokens.refresh_token)
+            
+            const retryHeaders: Record<string, string> = {
+              ...headers,
+              'Authorization': `Bearer ${newTokens.access_token}`,
+            }
+            const retryResponse = await fetch(url, {
+              method: 'POST',
+              headers: retryHeaders,
+              body: formData,
+            })
+            
+            if (!retryResponse.ok) {
+              const error: ApiError = await retryResponse.json().catch(() => ({
+                detail: `HTTP error! status: ${retryResponse.status}`,
+              }))
+              throw new Error(error.detail || 'An error occurred')
+            }
+            
+            return retryResponse.json()
+          } catch (refreshError) {
+            localStorage.removeItem('access_token')
+            localStorage.removeItem('refresh_token')
+            throw new Error('Session expired. Please login again.')
+          }
+        } else {
+          throw new Error('Session expired. Please login again.')
+        }
+      }
+
+      const error: ApiError = await response.json().catch(() => ({
+        detail: `HTTP error! status: ${response.status}`,
+      }))
+      throw new Error(error.detail || 'An error occurred')
+    }
+
+    return response.json()
+  }
+
   async getEntryById(id: string): Promise<EntryResponse> {
     return this.request<EntryResponse>(`/entries/${id}`)
   }
