@@ -1,6 +1,6 @@
 import { Box, Group, Text, ActionIcon, Avatar, Menu, Button } from '@mantine/core'
 import { useMediaQuery } from '@mantine/hooks'
-import { IconSettings, IconMenu2, IconUser, IconLogout, IconHome, IconBook, IconUpload, IconMicrophone } from '@tabler/icons-react'
+import { IconSettings, IconMenu2, IconUser, IconLogout, IconBook, IconUpload, IconMicrophone } from '@tabler/icons-react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { useState } from 'react'
@@ -31,33 +31,44 @@ export function Navbar({ userPicture, onMenuClick, onImportComplete, onAudioReco
         position: 'sticky',
         top: 0,
         zIndex: 100,
+        backdropFilter: 'blur(10px)',
+        WebkitBackdropFilter: 'blur(10px)',
       }}
     >
-        <Group justify="space-between" style={{ width: '100%' }}>
-        <Group gap={isMobile ? 'sm' : 'md'}>
+      <Group justify="space-between" style={{ width: '100%' }}>
+        <Group gap={isMobile ? 'sm' : 'md'} align="center">
           {isMobile && onMenuClick && (
             <ActionIcon
               variant="subtle"
               radius="md"
               size="lg"
               onClick={onMenuClick}
-              style={{
-                color: 'var(--theme-text)',
-                backgroundColor: 'transparent',
+              styles={{
+                root: {
+                  color: 'var(--theme-text)',
+                  backgroundColor: 'transparent',
+                  transition: 'background-color 0.2s ease, color 0.2s ease',
+                  '&:hover': {
+                    backgroundColor: 'var(--theme-hover)',
+                  },
+                  '&[data-hovered]': {
+                    backgroundColor: 'var(--theme-hover)',
+                  },
+                },
               }}
             >
               <IconMenu2 size={22} />
             </ActionIcon>
           )}
           <Text
-            onClick={() => navigate('/')}
+            onClick={() => navigate('/dashboard')}
             style={{
-              fontSize: isMobile ? '16px' : '20px',
-              fontWeight: 400,
-              letterSpacing: isMobile ? '2px' : '4px',
+              fontSize: isMobile ? '18px' : '22px',
+              fontWeight: 500,
+              letterSpacing: isMobile ? '1px' : '2px',
               color: 'var(--theme-text)',
-              textTransform: 'uppercase',
               cursor: 'pointer',
+              transition: 'opacity 0.2s ease',
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.opacity = '0.7'
@@ -70,63 +81,53 @@ export function Navbar({ userPicture, onMenuClick, onImportComplete, onAudioReco
           </Text>
         </Group>
 
-        <Group gap={isMobile ? 'xs' : 'md'}>
+        <Group gap={isMobile ? 'xs' : 'sm'} align="center">
           {onAudioRecord && (
             <ActionIcon
-              variant="subtle"
+              variant="light"
               radius="md"
               size={isMobile ? 'lg' : 'md'}
               onClick={onAudioRecord}
-              style={{
-                color: 'var(--theme-text)',
-                backgroundColor: 'transparent',
-                border: '1px solid var(--theme-border)',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = 'var(--theme-hover)'
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'transparent'
+              styles={{
+                root: {
+                  color: 'var(--theme-primary)',
+                  backgroundColor: 'var(--theme-hover)',
+                  border: 'none',
+                  transition: 'background-color 0.2s ease, color 0.2s ease',
+                  '&:hover': {
+                    backgroundColor: 'var(--theme-primary)',
+                    color: 'var(--theme-bg)',
+                  },
+                  '&[data-hovered]': {
+                    backgroundColor: 'var(--theme-primary)',
+                    color: 'var(--theme-bg)',
+                  },
+                },
               }}
               title="Записать аудио"
             >
-              <IconMicrophone size={isMobile ? 22 : 20} />
+              <IconMicrophone size={isMobile ? 20 : 18} />
             </ActionIcon>
           )}
-          <Button
-            variant="subtle"
-            leftSection={<IconHome size={16} />}
-            onClick={() => navigate('/dashboard')}
-            size="sm"
-            style={{
-              color: 'var(--theme-text)',
-              backgroundColor: 'transparent',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = 'var(--theme-hover)'
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'transparent'
-            }}
-          >
-            {isMobile ? '' : 'Главная'}
-          </Button>
           <ActionIcon
             variant="subtle"
             radius="md"
             size={isMobile ? 'lg' : 'md'}
             onClick={() => navigate('/settings')}
-            style={{
-              color: 'var(--theme-text)',
-              backgroundColor: 'transparent',
-              border: 'none',
+            styles={{
+              root: {
+                color: 'var(--theme-text)',
+                backgroundColor: 'transparent',
+                transition: 'background-color 0.2s ease, color 0.2s ease',
+                '&:hover': {
+                  backgroundColor: 'var(--theme-hover)',
+                },
+                '&[data-hovered]': {
+                  backgroundColor: 'var(--theme-hover)',
+                },
+              },
             }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = 'var(--theme-hover)'
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'transparent'
-            }}
+            title="Настройки"
           >
             <IconSettings size={isMobile ? 22 : 20} />
           </ActionIcon>
@@ -137,22 +138,56 @@ export function Navbar({ userPicture, onMenuClick, onImportComplete, onAudioReco
             position="bottom-end"
             offset={8}
             radius="md"
+            styles={{
+              dropdown: {
+                border: '1px solid var(--theme-border)',
+                backgroundColor: 'var(--theme-bg)',
+                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+              },
+              label: {
+                fontSize: '11px',
+                color: 'var(--theme-text-secondary)',
+                fontWeight: 600,
+                textTransform: 'uppercase',
+                letterSpacing: '0.5px',
+                padding: '8px 12px',
+                backgroundColor: 'var(--theme-bg)',
+              },
+              divider: {
+                borderColor: 'var(--theme-border)',
+                margin: '4px 0',
+              },
+              item: {
+                fontSize: '14px',
+                color: 'var(--theme-text)',
+                padding: '10px 12px',
+                backgroundColor: 'var(--theme-bg)',
+                '&:hover': {
+                  backgroundColor: 'var(--theme-hover)',
+                },
+                '&[data-hovered]': {
+                  backgroundColor: 'var(--theme-hover)',
+                },
+              },
+            }}
           >
             <Menu.Target>
               <Avatar
                 src={userPicture || undefined}
                 radius="xl"
-                size={isMobile ? 28 : 32}
+                size={isMobile ? 32 : 36}
                 style={{
-                  border: '1px solid var(--theme-border)',
+                  border: '2px solid var(--theme-border)',
                   cursor: 'pointer',
-                  transition: 'border-color 0.3s ease',
+                  transition: 'all 0.2s ease',
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.borderColor = 'var(--theme-primary)'
+                  e.currentTarget.style.transform = 'scale(1.05)'
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.borderColor = 'var(--theme-border)'
+                  e.currentTarget.style.transform = 'scale(1)'
                 }}
               >
                 {!userPicture && (
@@ -160,12 +195,13 @@ export function Navbar({ userPicture, onMenuClick, onImportComplete, onAudioReco
                     style={{
                       width: '100%',
                       height: '100%',
-                      backgroundColor: 'var(--theme-hover)',
+                      backgroundColor: 'var(--theme-primary)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      fontSize: isMobile ? '12px' : '14px',
-                      color: 'var(--theme-text-secondary)',
+                      fontSize: isMobile ? '14px' : '16px',
+                      color: 'var(--theme-bg)',
+                      fontWeight: 600,
                     }}
                   >
                     {user?.email?.[0]?.toUpperCase() || 'U'}
@@ -174,77 +210,26 @@ export function Navbar({ userPicture, onMenuClick, onImportComplete, onAudioReco
               </Avatar>
             </Menu.Target>
 
-            <Menu.Dropdown
-              style={{
-                border: '1px solid var(--theme-border)',
-                backgroundColor: 'var(--theme-bg)',
-              }}
-            >
-              <Menu.Label
-                style={{
-                  fontSize: '12px',
-                  color: 'var(--theme-text-secondary)',
-                  fontWeight: 400,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.5px',
-                }}
-              >
-                {user?.email}
-              </Menu.Label>
-              <Menu.Divider style={{ borderColor: 'var(--theme-border)' }} />
+            <Menu.Dropdown>
+              <Menu.Label>{user?.email}</Menu.Label>
+              <Menu.Divider />
               <Menu.Item
                 leftSection={<IconUser size={16} />}
                 onClick={() => navigate('/profile')}
-                style={{
-                  fontSize: '14px',
-                  color: 'var(--theme-text)',
-                  fontWeight: 400,
-                  padding: '8px 12px',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = 'var(--theme-hover)'
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = 'transparent'
-                }}
               >
                 Профиль
               </Menu.Item>
               <Menu.Item
                 leftSection={<IconBook size={16} />}
                 onClick={() => navigate('/tutorial')}
-                style={{
-                  fontSize: '14px',
-                  color: 'var(--theme-text)',
-                  fontWeight: 400,
-                  padding: '8px 12px',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = 'var(--theme-hover)'
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = 'transparent'
-                }}
               >
                 Руководство
               </Menu.Item>
               <Menu.Item
                 leftSection={<IconUpload size={16} />}
                 onClick={() => setTelegramImportOpened(true)}
-                style={{
-                  fontSize: '14px',
-                  color: 'var(--theme-text)',
-                  fontWeight: 400,
-                  padding: '8px 12px',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = 'var(--theme-hover)'
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = 'transparent'
-                }}
               >
-                <Group gap={4} align="center">
+                <Group gap={6} align="center">
                   <Text>Импорт из Telegram</Text>
                   <Text
                     size="xs"
@@ -260,22 +245,23 @@ export function Navbar({ userPicture, onMenuClick, onImportComplete, onAudioReco
                   </Text>
                 </Group>
               </Menu.Item>
-              <Menu.Divider style={{ borderColor: 'var(--theme-border)' }} />
+              <Menu.Divider />
               <Menu.Item
                 leftSection={<IconLogout size={16} />}
-                color="red"
                 onClick={logout}
-                style={{
-                  fontSize: '14px',
-                  color: 'var(--theme-text)',
-                  fontWeight: 400,
-                  padding: '8px 12px',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = '#fff5f5'
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = 'transparent'
+                styles={{
+                  root: {
+                    fontSize: '14px',
+                    color: '#dc2626',
+                    padding: '10px 12px',
+                    backgroundColor: 'var(--theme-bg)',
+                    '&:hover': {
+                      backgroundColor: '#fff5f5',
+                    },
+                    '&[data-hovered]': {
+                      backgroundColor: '#fff5f5',
+                    },
+                  },
                 }}
               >
                 Выйти

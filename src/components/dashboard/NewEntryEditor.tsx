@@ -47,12 +47,29 @@ export const NewEntryEditor = forwardRef<NewEntryEditorHandle, NewEntryEditorPro
     const [lastSaved, setLastSaved] = useState<Date | null>(null)
     const autoSaveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
     const lastSavedRef = useRef<string>('') // Track last saved content to avoid unnecessary saves
+    const textareaRef = useRef<HTMLTextAreaElement>(null)
 
     // Update state when initial values change
     React.useEffect(() => {
       setTitle(initialTitle)
       setContent(initialContent)
     }, [initialTitle, initialContent])
+
+    // Auto-focus textarea when editor opens (only for new entries, not editing)
+    useEffect(() => {
+      if (!isEditing) {
+        // Small delay to ensure the component is fully rendered
+        const timer = setTimeout(() => {
+          if (textareaRef.current) {
+            textareaRef.current.focus()
+            // Move cursor to the end
+            const length = textareaRef.current.value.length
+            textareaRef.current.setSelectionRange(length, length)
+          }
+        }, 150)
+        return () => clearTimeout(timer)
+      }
+    }, [isEditing, content]) // Re-focus when content changes (new entry opened)
 
     useImperativeHandle(ref, () => ({
       getTitle: () => title,
@@ -212,13 +229,19 @@ export const NewEntryEditor = forwardRef<NewEntryEditorHandle, NewEntryEditorPro
 
           {/* Content textarea */}
           <Textarea
-            placeholder="Начните писать..."
+            ref={textareaRef}
+            placeholder=""
             value={content}
             onChange={(e) => handleContentChange(e.target.value)}
             variant="unstyled"
             minRows={isMobile ? 15 : 20}
             autosize
-            autoFocus={!isEditing}
+            onKeyDown={(e) => {
+              // Allow immediate typing without needing to click
+              if (!textareaRef.current?.matches(':focus')) {
+                textareaRef.current?.focus()
+              }
+            }}
             styles={{
               input: {
                 border: 'none',

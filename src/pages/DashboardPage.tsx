@@ -35,6 +35,7 @@ export function DashboardPage() {
   const [draftEntryId, setDraftEntryId] = useState<string | null>(null)
   const [showAudioRecorder, setShowAudioRecorder] = useState(false)
   const editorRef = useRef<NewEntryEditorHandle>(null)
+  const hasAutoOpenedRef = useRef(false) // Track if we've auto-opened editor on initial load
   const isMobile = useMediaQuery('(max-width: 768px)')
 
   useEffect(() => {
@@ -118,6 +119,24 @@ export function DashboardPage() {
       }
     }
   }, [entries, searchParams, selectedEntry, isNewEntry, isEditingEntry, setSearchParams])
+
+  // Auto-open new entry editor on initial load if no entry is selected
+  useEffect(() => {
+    if (isAuthenticated && !authLoading && !loading && !hasAutoOpenedRef.current) {
+      const entryId = searchParams.get('entry')
+      // Only auto-open if there's no entry in URL and no entry is currently selected
+      if (!entryId && !selectedEntry && !isNewEntry && !isEditingEntry) {
+        hasAutoOpenedRef.current = true
+        setIsNewEntry(true)
+        setSelectedEntry(null)
+        setIsEditingEntry(false)
+        setWordCount(0)
+      } else if (entryId || selectedEntry) {
+        // If there's an entry in URL or selected, mark as auto-opened to prevent reopening
+        hasAutoOpenedRef.current = true
+      }
+    }
+  }, [isAuthenticated, authLoading, loading, searchParams, selectedEntry, isNewEntry, isEditingEntry])
 
   const handleLoadMore = useCallback(() => {
     if (!loadingMore && hasMore) {
@@ -689,69 +708,7 @@ export function DashboardPage() {
                 searchQuery={searchQuery} 
               />
             </Box>
-          ) : (
-            <Box
-              style={{
-                height: '100%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                padding: '40px',
-                cursor: 'pointer',
-              }}
-              onClick={handleNewEntry}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = 'var(--theme-hover)'
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'var(--theme-bg)'
-              }}
-            >
-              <Box
-                style={{
-                  textAlign: 'center',
-                  color: '#999',
-                  transition: 'transform 0.3s ease',
-                }}
-              >
-                <Box
-                  style={{
-                    fontSize: isMobile ? '32px' : '48px',
-                    fontWeight: 200,
-                    letterSpacing: isMobile ? '4px' : '8px',
-                    marginBottom: '16px',
-                  }}
-                >
-                  MoodLog
-                </Box>
-                <Box style={{ fontSize: isMobile ? '12px' : '14px', fontWeight: 300, marginBottom: '24px' }}>
-                  Нажмите, чтобы начать писать
-                </Box>
-                <Box
-                  style={{
-                    display: 'inline-block',
-                    padding: '12px 24px',
-                    border: '1px solid var(--theme-border)',
-                    borderRadius: '8px',
-                    color: 'var(--theme-text-secondary)',
-                    fontSize: isMobile ? '14px' : '16px',
-                    transition: 'all 0.3s ease',
-                  }}
-                >
-                  <span style={{ 
-                    display: 'inline-block',
-                    width: '2px',
-                    height: '20px',
-                    backgroundColor: 'var(--theme-primary)',
-                    animation: 'blink 1s step-end infinite',
-                    marginRight: '4px',
-                    verticalAlign: 'middle',
-                  }} />
-                  Начните писать...
-                </Box>
-              </Box>
-            </Box>
-          )}
+          ) : null}
         </ScrollArea>
 
         {/* Right sidebar - hidden on mobile */}
