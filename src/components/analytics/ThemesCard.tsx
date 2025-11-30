@@ -100,10 +100,20 @@ export function ThemesCard() {
   return (
     <Card
       padding={isMobile ? 'md' : 'lg'}
-      radius="md"
+      radius="lg"
       style={{
-        backgroundColor: 'var(--theme-bg)',
+        backgroundColor: 'var(--theme-surface)',
         border: '1px solid var(--theme-border)',
+        transition: 'all 0.3s ease',
+        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.05)',
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.boxShadow = '0 4px 16px rgba(0, 0, 0, 0.1)'
+        e.currentTarget.style.transform = 'translateY(-2px)'
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.05)'
+        e.currentTarget.style.transform = 'translateY(0)'
       }}
     >
       <Stack gap="md">

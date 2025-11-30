@@ -12,7 +12,7 @@ import {
   Transition,
 } from '@mantine/core'
 import { useIntersection, useMediaQuery } from '@mantine/hooks'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import {
   IconBrain,
   IconLock,
@@ -23,6 +23,7 @@ import {
 } from '@tabler/icons-react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import { MoodBackground } from './EmotionWordsAnimation'
 
 interface FeatureCardProps {
   icon: React.ComponentType<{ size?: number | string; style?: React.CSSProperties }>
@@ -119,6 +120,7 @@ function LandingPage() {
   const { ref: featuresIntersectionRef, entry: featuresEntry } = useIntersection({
     threshold: 0.1,
   })
+  const heroRef = useRef<HTMLDivElement>(null)
   const navigate = useNavigate()
   const { isAuthenticated } = useAuth()
 
@@ -149,10 +151,12 @@ function LandingPage() {
         backgroundColor: '#fff',
         color: '#000',
         minHeight: '100vh',
+        position: 'relative',
       }}
     >
       {/* Hero Section */}
       <Box
+        ref={heroRef}
         style={{
           minHeight: isMobile ? '80vh' : '100vh',
           display: 'flex',
@@ -163,6 +167,8 @@ function LandingPage() {
           padding: isMobile ? '40px 20px' : isTablet ? '60px 40px' : '80px 40px',
         }}
       >
+        {/* Emotion Words Animation */}
+        {mounted && <MoodBackground />}
         {/* Animated background gradient */}
         <Box
           style={{

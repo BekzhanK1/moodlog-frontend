@@ -3,6 +3,7 @@ import * as React from 'react'
 import { Box, TextInput, Textarea, Stack, Button, Group, Divider, Text, Loader } from '@mantine/core'
 import { useMediaQuery } from '@mantine/hooks'
 import { IconCheck, IconLoader, IconX } from '@tabler/icons-react'
+import { getEditorFont, getFontFamily, FontFamily } from '../../utils/fonts'
 
 export interface NewEntryEditorHandle {
   getTitle: () => string
@@ -25,6 +26,7 @@ interface NewEntryEditorProps {
   isEditing?: boolean // Whether we're editing an existing entry (not creating new)
   writingQuestions?: string[] // Dynamic questions to display
   questionsLoading?: boolean // Whether questions are loading
+  fontFamily?: FontFamily // Selected font family
 }
 
 export const NewEntryEditor = forwardRef<NewEntryEditorHandle, NewEntryEditorProps>(
@@ -43,21 +45,52 @@ export const NewEntryEditor = forwardRef<NewEntryEditorHandle, NewEntryEditorPro
     isEditing = false,
     writingQuestions = [],
     questionsLoading = false,
+    fontFamily = getEditorFont(),
   }, ref) {
     const isMobile = useMediaQuery('(max-width: 768px)')
     const [title, setTitle] = useState(initialTitle)
     const [content, setContent] = useState(initialContent)
     const [isAutoSaving, setIsAutoSaving] = useState(false)
     const [lastSaved, setLastSaved] = useState<Date | null>(null)
+    const [currentFont, setCurrentFont] = useState<FontFamily>(fontFamily)
     const autoSaveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
     const lastSavedRef = useRef<string>('') // Track last saved content to avoid unnecessary saves
     const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+    // Listen for font changes in localStorage
+    useEffect(() => {
+      const handleStorageChange = (e: StorageEvent) => {
+        if (e.key === 'editor_font_family' && e.newValue) {
+          setCurrentFont(e.newValue as FontFamily)
+        }
+      }
+
+      window.addEventListener('storage', handleStorageChange)
+      
+      // Also check for changes in the same tab (storage event doesn't fire in same tab)
+      const interval = setInterval(() => {
+        const newFont = getEditorFont()
+        if (newFont !== currentFont) {
+          setCurrentFont(newFont)
+        }
+      }, 500)
+
+      return () => {
+        window.removeEventListener('storage', handleStorageChange)
+        clearInterval(interval)
+      }
+    }, [currentFont])
 
     // Update state when initial values change
     React.useEffect(() => {
       setTitle(initialTitle)
       setContent(initialContent)
     }, [initialTitle, initialContent])
+
+    // Update font when prop changes
+    useEffect(() => {
+      setCurrentFont(fontFamily)
+    }, [fontFamily])
 
     // Auto-focus textarea when editor opens (only for new entries, not editing)
     useEffect(() => {
@@ -219,6 +252,7 @@ export const NewEntryEditor = forwardRef<NewEntryEditorHandle, NewEntryEditorPro
                 fontSize: isMobile ? '24px' : '32px',
                 fontWeight: 400,
                 padding: isMobile ? '10px 0' : '12px 0',
+                fontFamily: getFontFamily(currentFont),
                 '&:focus': {
                   border: 'none',
                   outline: 'none',
@@ -257,6 +291,7 @@ export const NewEntryEditor = forwardRef<NewEntryEditorHandle, NewEntryEditorPro
                 lineHeight: 1.8,
                 padding: isMobile ? '12px 0' : '16px 0',
                 resize: 'none',
+                fontFamily: getFontFamily(currentFont),
                 '&:focus': {
                   border: 'none',
                   outline: 'none',

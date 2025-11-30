@@ -11,14 +11,50 @@ import { AnalyticsPage } from './pages/AnalyticsPage'
 import { TutorialPage } from './pages/TutorialPage'
 import { AuthProvider } from './contexts/AuthContext'
 import { ThemeProvider, useTheme } from './contexts/ThemeContext'
+import { WeatherEffectComponent } from './components/WeatherEffect'
+import { getWeatherEffect } from './utils/weatherEffects'
+import { useState, useEffect } from 'react'
 
 function AppContent() {
   const { mantineTheme } = useTheme()
+  const [weatherEffect, setWeatherEffect] = useState(getWeatherEffect())
+
+  useEffect(() => {
+    // Listen for weather effect changes from settings
+    const handleEffectChange = (e: CustomEvent) => {
+      setWeatherEffect(e.detail)
+    }
+
+    // Listen for storage changes (when settings are changed in another tab)
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'weather_effect' && e.newValue) {
+        setWeatherEffect(e.newValue as any)
+      }
+    }
+
+    window.addEventListener('weatherEffectChanged', handleEffectChange as EventListener)
+    window.addEventListener('storage', handleStorageChange)
+
+    // Also check periodically for changes in the same tab
+    const interval = setInterval(() => {
+      const newEffect = getWeatherEffect()
+      if (newEffect !== weatherEffect) {
+        setWeatherEffect(newEffect)
+      }
+    }, 500)
+
+    return () => {
+      window.removeEventListener('weatherEffectChanged', handleEffectChange as EventListener)
+      window.removeEventListener('storage', handleStorageChange)
+      clearInterval(interval)
+    }
+  }, [weatherEffect])
 
   return (
     <MantineProvider theme={mantineTheme}>
       <BrowserRouter>
         <AuthProvider>
+          <WeatherEffectComponent effect={weatherEffect} />
           <Routes>
             <Route path="/" element={<LandingPage />} />
             <Route path="/login" element={<LoginPage />} />

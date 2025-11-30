@@ -3,7 +3,8 @@ import { useMediaQuery } from '@mantine/hooks'
 import { IconHash, IconPencil, IconTrash, IconX } from '@tabler/icons-react'
 import { EntryResponse } from '../../utils/api'
 import { highlightText, shouldHighlightTag } from '../../utils/highlight'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { getEditorFont, getFontFamily } from '../../utils/fonts'
 
 interface EntryViewProps {
   entry: EntryResponse
@@ -19,6 +20,31 @@ export function EntryView({ entry, onEdit, onDelete, onTagClick, onClose, search
   const [deleteModalOpened, setDeleteModalOpened] = useState(false)
   const [deleteConfirmText, setDeleteConfirmText] = useState('')
   const [isDeleting, setIsDeleting] = useState(false)
+  const [currentFont, setCurrentFont] = useState(getEditorFont())
+
+  // Listen for font changes
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'editor_font_family' && e.newValue) {
+        setCurrentFont(e.newValue as any)
+      }
+    }
+
+    window.addEventListener('storage', handleStorageChange)
+    
+    // Also check for changes in the same tab
+    const interval = setInterval(() => {
+      const newFont = getEditorFont()
+      if (newFont !== currentFont) {
+        setCurrentFont(newFont)
+      }
+    }, 500)
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange)
+      clearInterval(interval)
+    }
+  }, [currentFont])
 
   const handleDeleteClick = () => {
     setDeleteModalOpened(true)
@@ -169,6 +195,7 @@ export function EntryView({ entry, onEdit, onDelete, onTagClick, onClose, search
                 color: 'var(--theme-text)',
                 lineHeight: 1.3,
                 wordBreak: 'break-word',
+                fontFamily: getFontFamily(currentFont),
               }}
             >
               {searchQuery && !searchQuery.startsWith('#')
@@ -198,6 +225,7 @@ export function EntryView({ entry, onEdit, onDelete, onTagClick, onClose, search
             lineHeight: 1.8,
             whiteSpace: 'pre-wrap',
             wordBreak: 'break-word',
+            fontFamily: getFontFamily(currentFont),
           }}
         >
           {searchQuery && !searchQuery.startsWith('#')

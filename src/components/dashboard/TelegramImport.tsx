@@ -1,6 +1,6 @@
-import { Modal, Text, Stack, Group, Box, ScrollArea, Button, Checkbox, FileButton, Alert, Loader } from '@mantine/core'
+import { Modal, Text, Stack, Group, Box, ScrollArea, Button, Checkbox, FileButton, Alert, Loader, Card, Divider, Badge } from '@mantine/core'
 import { useMediaQuery } from '@mantine/hooks'
-import { IconUpload, IconAlertCircle, IconCheck } from '@tabler/icons-react'
+import { IconUpload, IconAlertCircle, IconCheck, IconBrandTelegram, IconInfoCircle, IconDeviceDesktop, IconFileCode, IconDownload, IconDots } from '@tabler/icons-react'
 import { useState, useCallback } from 'react'
 import { apiClient } from '../../utils/api'
 
@@ -241,11 +241,38 @@ export function TelegramImport({ opened, onClose, onImportComplete }: TelegramIm
       opened={opened}
       onClose={handleClose}
       title={
-        <Text style={{ fontSize: isMobile ? '18px' : '20px', fontWeight: 600, color: 'var(--theme-text)' }}>
-          Импорт из Telegram <Text span size="xs" c="dimmed">(beta)</Text>
-        </Text>
+        <Group gap="xs" align="center">
+          <Box
+            style={{
+              width: '32px',
+              height: '32px',
+              borderRadius: '8px',
+              backgroundColor: 'color-mix(in srgb, var(--theme-primary) 10%, transparent)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <IconBrandTelegram size={18} style={{ color: 'var(--theme-primary)' }} />
+          </Box>
+          <Text style={{ fontSize: isMobile ? '18px' : '20px', fontWeight: 600, color: 'var(--theme-text)' }}>
+            Импорт из Telegram
+          </Text>
+          <Badge
+            size="sm"
+            radius="md"
+            variant="light"
+            style={{
+              backgroundColor: 'color-mix(in srgb, var(--theme-primary) 10%, transparent)',
+              color: 'var(--theme-primary)',
+              border: '1px solid var(--theme-border)',
+            }}
+          >
+            Beta
+          </Badge>
+        </Group>
       }
-      size={isMobile ? '95%' : '800px'}
+      size={isMobile ? '95%' : '900px'}
       centered
       styles={{
         root: {
@@ -277,34 +304,376 @@ export function TelegramImport({ opened, onClose, onImportComplete }: TelegramIm
         },
       }}
     >
-      <Stack gap="md">
+      <Stack gap="lg">
         {messages.length === 0 && !loading && (
-          <Box>
-            <FileButton onChange={handleFileSelect} accept="application/json">
-              {(props) => (
-                <Button
-                  {...props}
-                  leftSection={<IconUpload size={16} />}
-                  fullWidth
-                  size="md"
+          <>
+            {/* Instructions Card */}
+            <Card
+              padding="lg"
+              radius="lg"
+              style={{
+                backgroundColor: 'var(--theme-surface)',
+                border: '1px solid var(--theme-border)',
+              }}
+            >
+              <Stack gap="md">
+                <Group gap="xs" align="center">
+                  <Box
+                    style={{
+                      width: '32px',
+                      height: '32px',
+                      borderRadius: '8px',
+                      backgroundColor: 'color-mix(in srgb, var(--theme-primary) 10%, transparent)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <IconBrandTelegram size={18} style={{ color: 'var(--theme-primary)' }} />
+                  </Box>
+                  <Text
+                    style={{
+                      fontSize: '18px',
+                      fontWeight: 600,
+                      color: 'var(--theme-text)',
+                    }}
+                  >
+                    Как экспортировать данные из Telegram
+                  </Text>
+                </Group>
+
+                <Alert
+                  icon={<IconInfoCircle size={16} />}
+                  title="Важно"
+                  color="blue"
                   variant="light"
+                  styles={{
+                    root: {
+                      backgroundColor: 'color-mix(in srgb, var(--theme-primary) 5%, transparent)',
+                      border: '1px solid var(--theme-border)',
+                    },
+                    title: {
+                      color: 'var(--theme-text)',
+                      fontWeight: 600,
+                    },
+                    message: {
+                      color: 'var(--theme-text-secondary)',
+                    },
+                  }}
+                >
+                  Экспорт можно сделать только на десктопе. Импорт работает только с личными каналами (Saved Messages) или каналами, где вы являетесь администратором.
+                </Alert>
+
+                <Stack gap="sm">
+                  <Group gap="sm" align="flex-start" wrap="nowrap">
+                    <Box
+                      style={{
+                        width: '28px',
+                        height: '28px',
+                        borderRadius: '6px',
+                        backgroundColor: 'var(--theme-primary)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: 'var(--theme-bg)',
+                        fontWeight: 600,
+                        fontSize: '14px',
+                        flexShrink: 0,
+                      }}
+                    >
+                      1
+                    </Box>
+                    <Stack gap={4} style={{ flex: 1 }}>
+                      <Group gap="xs" align="center">
+                        <IconDeviceDesktop size={16} style={{ color: 'var(--theme-primary)' }} />
+                        <Text
+                          style={{
+                            fontSize: '15px',
+                            fontWeight: 600,
+                            color: 'var(--theme-text)',
+                          }}
+                        >
+                          Откройте Telegram Desktop
+                        </Text>
+                      </Group>
+                      <Text
+                        size="sm"
+                        style={{
+                          color: 'var(--theme-text-secondary)',
+                          lineHeight: 1.6,
+                        }}
+                      >
+                        Откройте приложение Telegram на вашем компьютере (десктопная версия)
+                      </Text>
+                    </Stack>
+                  </Group>
+
+                  <Group gap="sm" align="flex-start" wrap="nowrap">
+                    <Box
+                      style={{
+                        width: '28px',
+                        height: '28px',
+                        borderRadius: '6px',
+                        backgroundColor: 'var(--theme-primary)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: 'var(--theme-bg)',
+                        fontWeight: 600,
+                        fontSize: '14px',
+                        flexShrink: 0,
+                      }}
+                    >
+                      2
+                    </Box>
+                    <Stack gap={4} style={{ flex: 1 }}>
+                      <Group gap="xs" align="center">
+                        <IconBrandTelegram size={16} style={{ color: 'var(--theme-primary)' }} />
+                        <Text
+                          style={{
+                            fontSize: '15px',
+                            fontWeight: 600,
+                            color: 'var(--theme-text)',
+                          }}
+                        >
+                          Зайдите в канал
+                        </Text>
+                      </Group>
+                      <Text
+                        size="sm"
+                        style={{
+                          color: 'var(--theme-text-secondary)',
+                          lineHeight: 1.6,
+                        }}
+                      >
+                        Откройте нужный канал (личный канал "Saved Messages" или канал, где вы администратор)
+                      </Text>
+                    </Stack>
+                  </Group>
+
+                  <Group gap="sm" align="flex-start" wrap="nowrap">
+                    <Box
+                      style={{
+                        width: '28px',
+                        height: '28px',
+                        borderRadius: '6px',
+                        backgroundColor: 'var(--theme-primary)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: 'var(--theme-bg)',
+                        fontWeight: 600,
+                        fontSize: '14px',
+                        flexShrink: 0,
+                      }}
+                    >
+                      3
+                    </Box>
+                    <Stack gap={4} style={{ flex: 1 }}>
+                      <Group gap="xs" align="center">
+                        <IconDots size={16} style={{ color: 'var(--theme-primary)' }} />
+                        <Text
+                          style={{
+                            fontSize: '15px',
+                            fontWeight: 600,
+                            color: 'var(--theme-text)',
+                          }}
+                        >
+                          Откройте меню канала
+                        </Text>
+                      </Group>
+                      <Text
+                        size="sm"
+                        style={{
+                          color: 'var(--theme-text-secondary)',
+                          lineHeight: 1.6,
+                        }}
+                      >
+                        Нажмите на три точки (⋮) в правом верхнем углу канала и выберите <strong>"Экспорт истории чата"</strong>
+                      </Text>
+                    </Stack>
+                  </Group>
+
+                  <Group gap="sm" align="flex-start" wrap="nowrap">
+                    <Box
+                      style={{
+                        width: '28px',
+                        height: '28px',
+                        borderRadius: '6px',
+                        backgroundColor: 'var(--theme-primary)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: 'var(--theme-bg)',
+                        fontWeight: 600,
+                        fontSize: '14px',
+                        flexShrink: 0,
+                      }}
+                    >
+                      4
+                    </Box>
+                    <Stack gap={4} style={{ flex: 1 }}>
+                      <Group gap="xs" align="center">
+                        <IconFileCode size={16} style={{ color: 'var(--theme-primary)' }} />
+                        <Text
+                          style={{
+                            fontSize: '15px',
+                            fontWeight: 600,
+                            color: 'var(--theme-text)',
+                          }}
+                        >
+                          Настройте экспорт
+                        </Text>
+                      </Group>
+                      <Text
+                        size="sm"
+                        style={{
+                          color: 'var(--theme-text-secondary)',
+                          lineHeight: 1.6,
+                        }}
+                      >
+                        В настройках экспорта выберите формат <strong>"Машиночитаемый JSON"</strong> и <strong>уберите все галочки</strong> (фотографии, видео, файлы и т.д.)
+                      </Text>
+                    </Stack>
+                  </Group>
+
+                  <Group gap="sm" align="flex-start" wrap="nowrap">
+                    <Box
+                      style={{
+                        width: '28px',
+                        height: '28px',
+                        borderRadius: '6px',
+                        backgroundColor: 'var(--theme-primary)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: 'var(--theme-bg)',
+                        fontWeight: 600,
+                        fontSize: '14px',
+                        flexShrink: 0,
+                      }}
+                    >
+                      5
+                    </Box>
+                    <Stack gap={4} style={{ flex: 1 }}>
+                      <Group gap="xs" align="center">
+                        <IconDownload size={16} style={{ color: 'var(--theme-primary)' }} />
+                        <Text
+                          style={{
+                            fontSize: '15px',
+                            fontWeight: 600,
+                            color: 'var(--theme-text)',
+                          }}
+                        >
+                          Экспортируйте и загрузите файл
+                        </Text>
+                      </Group>
+                      <Text
+                        size="sm"
+                        style={{
+                          color: 'var(--theme-text-secondary)',
+                          lineHeight: 1.6,
+                        }}
+                      >
+                        Нажмите <strong>"Экспортировать"</strong>. После завершения экспорта найдите файл <strong>result.json</strong> в архиве и загрузите его здесь
+                      </Text>
+                    </Stack>
+                  </Group>
+
+                  
+                </Stack>
+              </Stack>
+            </Card>
+
+            <Divider style={{ borderColor: 'var(--theme-border)', opacity: 0.5 }} />
+
+            {/* Upload Section */}
+            <Card
+              padding="lg"
+              radius="lg"
+              style={{
+                backgroundColor: 'var(--theme-surface)',
+                border: '2px dashed var(--theme-border)',
+                transition: 'all 0.2s ease',
+              }}
+            >
+              <Stack gap="md" align="center">
+                <Box
                   style={{
-                    backgroundColor: 'var(--theme-hover)',
-                    color: 'var(--theme-text)',
+                    width: '64px',
+                    height: '64px',
+                    borderRadius: '16px',
+                    backgroundColor: 'color-mix(in srgb, var(--theme-primary) 10%, transparent)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <IconUpload size={32} style={{ color: 'var(--theme-primary)' }} />
+                </Box>
+                <Stack gap="xs" align="center">
+                  <Text
+                    style={{
+                      fontSize: '18px',
+                      fontWeight: 600,
+                      color: 'var(--theme-text)',
+                      textAlign: 'center',
+                    }}
+                  >
+                    Загрузите файл экспорта
+                  </Text>
+                  <Text
+                    size="sm"
+                    style={{
+                      color: 'var(--theme-text-secondary)',
+                      textAlign: 'center',
+                      maxWidth: '400px',
+                    }}
+                  >
+                    Выберите файл <strong>result.json</strong> из архива экспорта Telegram
+                  </Text>
+                </Stack>
+                <FileButton onChange={handleFileSelect} accept="application/json">
+                  {(props) => (
+                    <Button
+                      {...props}
+                      leftSection={<IconUpload size={18} />}
+                      size="md"
+                      radius="md"
+                      styles={{
+                        root: {
+                          backgroundColor: 'var(--theme-primary)',
+                          border: 'none',
+                          fontWeight: 500,
+                          '&:hover': {
+                            backgroundColor: 'var(--theme-primary)',
+                            opacity: 0.9,
+                          },
+                        },
+                        label: {
+                          color: 'var(--theme-bg)',
+                        },
+                      }}
+                    >
+                      Выбрать файл
+                    </Button>
+                  )}
+                </FileButton>
+                <Badge
+                  variant="light"
+                  size="sm"
+                  radius="md"
+                  style={{
+                    backgroundColor: 'color-mix(in srgb, var(--theme-primary) 10%, transparent)',
+                    color: 'var(--theme-text-secondary)',
                     border: '1px solid var(--theme-border)',
                   }}
                 >
-                  Загрузить JSON файл экспорта Telegram
-                </Button>
-              )}
-            </FileButton>
-            <Text size="sm" mt="xs" style={{ 
-              textAlign: 'center',
-              color: 'var(--theme-text-secondary)',
-            }}>
-              Выберите файл result.json из экспорта Telegram
-            </Text>
-          </Box>
+                  Только JSON формат
+                </Badge>
+              </Stack>
+            </Card>
+          </>
         )}
 
         {loading && (
@@ -381,10 +750,21 @@ export function TelegramImport({ opened, onClose, onImportComplete }: TelegramIm
 
         {messages.length > 0 && (
           <>
-            <Group justify="space-between" align="center">
-              <Text style={{ color: 'var(--theme-text)' }}>
-                Найдено сообщений: {messages.length}
-              </Text>
+            <Card
+              padding="md"
+              radius="md"
+              style={{
+                backgroundColor: 'var(--theme-surface)',
+                border: '1px solid var(--theme-border)',
+              }}
+            >
+              <Group justify="space-between" align="center">
+                <Group gap="xs" align="center">
+                  <IconCheck size={18} style={{ color: 'var(--theme-primary)' }} />
+                  <Text style={{ color: 'var(--theme-text)', fontWeight: 500 }}>
+                    Найдено сообщений: {messages.length}
+                  </Text>
+                </Group>
               <Group gap="xs">
                 <Button
                   variant="subtle"
@@ -425,7 +805,8 @@ export function TelegramImport({ opened, onClose, onImportComplete }: TelegramIm
                   Очистить
                 </Button>
               </Group>
-            </Group>
+              </Group>
+            </Card>
 
             <ScrollArea 
               style={{ height: isMobile ? '400px' : '500px' }}

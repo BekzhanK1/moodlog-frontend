@@ -11,6 +11,7 @@ import {
   ScrollArea,
   Drawer,
   ActionIcon,
+  Loader,
 } from '@mantine/core'
 import { useMediaQuery } from '@mantine/hooks'
 import {
@@ -64,11 +65,25 @@ export function Sidebar({
   const observerRef = useRef<IntersectionObserver | null>(null)
   const loadMoreRef = useRef<HTMLDivElement>(null)
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const searchInputRef = useRef<HTMLInputElement>(null)
 
   // Sync searchValue with searchQuery prop
   useEffect(() => {
     setSearchValue(searchQuery)
   }, [searchQuery])
+
+  // Keyboard shortcut for search (Cmd/Ctrl+K)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault()
+        searchInputRef.current?.focus()
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [])
 
   // On mobile, close sidebar when entry is clicked
   const handleEntryClick = (entry: EntryResponse) => {
@@ -119,6 +134,39 @@ export function Sidebar({
       year: 'numeric',
     })
   }
+
+  const formatDateGroup = (dateString: string) => {
+    const date = new Date(dateString)
+    const today = new Date()
+    const yesterday = new Date(today)
+    yesterday.setDate(yesterday.getDate() - 1)
+    
+    const dateStr = date.toDateString()
+    const todayStr = today.toDateString()
+    const yesterdayStr = yesterday.toDateString()
+    
+    if (dateStr === todayStr) {
+      return 'Сегодня'
+    } else if (dateStr === yesterdayStr) {
+      return 'Вчера'
+    } else {
+      return date.toLocaleDateString('ru-RU', {
+        day: 'numeric',
+        month: 'long',
+        year: date.getFullYear() !== today.getFullYear() ? 'numeric' : undefined,
+      })
+    }
+  }
+
+  // Group entries by date
+  const groupedEntries = entries.reduce((acc, entry) => {
+    const dateKey = new Date(entry.created_at).toDateString()
+    if (!acc[dateKey]) {
+      acc[dateKey] = []
+    }
+    acc[dateKey].push(entry)
+    return acc
+  }, {} as Record<string, typeof entries>)
 
   const truncateContent = (content: string, maxLength: number = 50) => {
     if (content.length <= maxLength) return content
@@ -213,7 +261,8 @@ export function Sidebar({
       {/* Search Input */}
       <Box style={{ padding: '16px', borderBottom: '1px solid var(--theme-border)' }}>
         <TextInput
-          placeholder="Поиск или #тег"
+          ref={searchInputRef}
+          placeholder="Поиск или #тег (⌘K)"
           value={searchValue}
           onChange={(e) => {
               const value = e.currentTarget.value
@@ -285,8 +334,87 @@ export function Sidebar({
         viewportRef={scrollAreaRef}
       >
         <Box style={{ padding: isMobile ? '12px' : '16px' }}>
-          <Stack gap={isMobile ? 'sm' : 'md'}>
-            {entries.map((entry) => {
+          {!isLoading && entries.length === 0 ? (
+            <Box
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '48px 24px',
+                textAlign: 'center',
+                minHeight: '300px',
+              }}
+            >
+              <Box
+                style={{
+                  width: '64px',
+                  height: '64px',
+                  borderRadius: '50%',
+                  backgroundColor: 'var(--theme-hover)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginBottom: '16px',
+                  opacity: 0.6,
+                }}
+              >
+                <IconPlus size={32} style={{ color: 'var(--theme-text-secondary)' }} />
+              </Box>
+              <Text
+                size="lg"
+                style={{
+                  color: 'var(--theme-text)',
+                  fontWeight: 500,
+                  marginBottom: '8px',
+                }}
+              >
+                {searchQuery ? 'Записи не найдены' : 'Пока нет записей'}
+              </Text>
+              <Text
+                size="sm"
+                style={{
+                  color: 'var(--theme-text-secondary)',
+                  marginBottom: '24px',
+                  maxWidth: '280px',
+                }}
+              >
+                {searchQuery 
+                  ? 'Попробуйте изменить поисковый запрос или создать новую запись'
+                  : 'Создайте свою первую запись, чтобы начать вести дневник настроения'}
+              </Text>
+              {!searchQuery && (
+                <Button
+                  leftSection={<IconPlus size={18} />}
+                  onClick={handleNewEntry}
+                  style={{
+                    backgroundColor: 'var(--theme-primary)',
+                    color: 'var(--theme-bg)',
+                  }}
+                >
+                  Создать запись
+                </Button>
+              )}
+            </Box>
+          ) : (
+            <Stack gap={isMobile ? 'md' : 'lg'}>
+              {Object.entries(groupedEntries).map(([dateKey, dateEntries]) => (
+                <Box key={dateKey}>
+                  <Text
+                    size="xs"
+                    style={{
+                      color: 'var(--theme-text-secondary)',
+                      fontWeight: 600,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px',
+                      marginBottom: '12px',
+                      paddingLeft: '4px',
+                    }}
+                  >
+                    {formatDateGroup(dateEntries[0].created_at)}
+                  </Text>
+                  <Stack gap={isMobile ? 'sm' : 'md'}>
+                    {dateEntries.map((entry) => {
               const isSelected = selectedEntryId === entry.id
               const isDeleting = deletingEntryId === entry.id
               const isDraft = entry.is_draft || false
@@ -458,21 +586,34 @@ export function Sidebar({
                 </Stack>
               </Card>
               )
-            })}
+                    })}
+                  </Stack>
+                </Box>
+              ))}
 
             {/* Load more trigger */}
             {hasMore && (
               <Box ref={loadMoreRef} style={{ height: '20px' }} />
             )}
 
-            {isLoading && (
-              <Box style={{ textAlign: 'center', padding: '16px' }}>
-                <Text size="sm" style={{ color: 'var(--theme-text-secondary)' }}>
-                  Загрузка...
-                </Text>
-              </Box>
-            )}
-          </Stack>
+              {isLoading && entries.length === 0 && (
+                <Box style={{ textAlign: 'center', padding: '48px 24px' }}>
+                  <Stack gap="md" align="center">
+                    <Loader size="md" color="var(--theme-primary)" />
+                    <Text size="sm" style={{ color: 'var(--theme-text-secondary)' }}>
+                      Загрузка записей...
+                    </Text>
+                  </Stack>
+                </Box>
+              )}
+
+              {isLoading && entries.length > 0 && (
+                <Box style={{ textAlign: 'center', padding: '16px' }}>
+                  <Loader size="sm" color="var(--theme-primary)" />
+                </Box>
+              )}
+            </Stack>
+          )}
         </Box>
       </ScrollArea>
     </>

@@ -1,20 +1,24 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   Box,
   Stack,
   Text,
   Group,
   Badge,
-  Divider,
   Loader,
+  Button,
 } from '@mantine/core'
 import {
   IconChevronRight,
   IconChevronLeft,
   IconHash,
+  IconTemperature,
+  IconRefresh,
+  IconSparkles,
 } from '@tabler/icons-react'
 import { EntryResponse } from '../../utils/api'
 import { shouldHighlightTag } from '../../utils/highlight'
+import { getCurrentWeather, getWeatherIconUrl, WeatherData } from '../../utils/weather'
 
 interface RightSidebarProps {
   entry?: EntryResponse | null
@@ -24,10 +28,108 @@ interface RightSidebarProps {
   searchQuery?: string
   writingQuestions?: string[]
   questionsLoading?: boolean
+  onRefreshQuestions?: () => Promise<{ success: boolean; message?: string }>
+  canRefreshQuestions?: () => { allowed: boolean; remaining: number; resetTime: number | null }
 }
 
-export function RightSidebar({ entry, wordCount, isNewEntry, onTagClick, searchQuery, writingQuestions = [], questionsLoading = false }: RightSidebarProps) {
+export function RightSidebar({ 
+  entry, 
+  wordCount, 
+  isNewEntry, 
+  onTagClick, 
+  searchQuery, 
+  writingQuestions = [], 
+  questionsLoading = false,
+  onRefreshQuestions,
+  canRefreshQuestions
+}: RightSidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false)
+  const [weather, setWeather] = useState<WeatherData | null>(null)
+  const [weatherLoading, setWeatherLoading] = useState(false)
+  const [weatherError, setWeatherError] = useState<string | null>(null)
+  const [refreshingQuestions, setRefreshingQuestions] = useState(false)
+  const [rateLimitInfo, setRateLimitInfo] = useState<{ allowed: boolean; remaining: number; resetTime: number | null } | null>(null)
+
+  // Update rate limit info periodically
+  useEffect(() => {
+    if (canRefreshQuestions && isNewEntry) {
+      const updateRateLimit = () => {
+        setRateLimitInfo(canRefreshQuestions())
+      }
+      
+      updateRateLimit()
+      const interval = setInterval(updateRateLimit, 1000) // Update every second for countdown
+      
+      return () => clearInterval(interval)
+    }
+  }, [canRefreshQuestions, isNewEntry])
+
+  const handleRefreshQuestions = async () => {
+    if (!onRefreshQuestions || !rateLimitInfo?.allowed || refreshingQuestions) return
+
+    setRefreshingQuestions(true)
+    try {
+      const result = await onRefreshQuestions()
+      if (!result.success && result.message) {
+        // Could show a notification here if needed
+        console.log(result.message)
+      }
+      // Update rate limit info after refresh
+      if (canRefreshQuestions) {
+        setRateLimitInfo(canRefreshQuestions())
+      }
+    } catch (error) {
+      console.error('Failed to refresh questions:', error)
+    } finally {
+      setRefreshingQuestions(false)
+    }
+  }
+
+  const getTimeUntilReset = (resetTime: number | null): string => {
+    if (!resetTime) return ''
+    const now = Date.now()
+    const diff = resetTime - now
+    if (diff <= 0) return ''
+    
+    const minutes = Math.floor(diff / 60000)
+    const seconds = Math.floor((diff % 60000) / 1000)
+    
+    if (minutes > 0) {
+      return `${minutes}м ${seconds}с`
+    }
+    return `${seconds}с`
+  }
+
+  useEffect(() => {
+    const fetchWeather = async () => {
+      setWeatherLoading(true)
+      setWeatherError(null)
+      try {
+        const weatherData = await getCurrentWeather()
+        setWeather(weatherData)
+      } catch (error) {
+        console.error('Failed to fetch weather:', error)
+        if (error instanceof Error) {
+          if (error.message.includes('Geolocation')) {
+            setWeatherError('Доступ к геолокации запрещён')
+          } else if (error.message.includes('API key')) {
+            setWeatherError('API ключ не настроен')
+          } else {
+            setWeatherError('Не удалось загрузить погоду')
+          }
+        } else {
+          setWeatherError('Не удалось загрузить погоду')
+        }
+      } finally {
+        setWeatherLoading(false)
+      }
+    }
+
+    // Fetch weather only for new entries and if sidebar is not collapsed
+    if (isNewEntry && !isCollapsed) {
+      fetchWeather()
+    }
+  }, [isCollapsed, isNewEntry])
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
@@ -60,11 +162,18 @@ export function RightSidebar({ entry, wordCount, isNewEntry, onTagClick, searchQ
 
   const sidebarContent = (
     <Box style={{ padding: '24px', overflowY: 'auto', flex: 1, position: 'relative', zIndex: 1 }}>
-        <Stack gap="lg">
+        <Stack gap="xl">
           {isNewEntry ? (
             <>
               {/* Word count */}
-              <Box>
+              <Box
+                style={{
+                  padding: '16px',
+                  borderRadius: '12px',
+                  backgroundColor: 'var(--theme-surface)',
+                  border: '1px solid var(--theme-border)',
+                }}
+              >
                 <Text
                   size="xs"
                   style={{
@@ -80,7 +189,7 @@ export function RightSidebar({ entry, wordCount, isNewEntry, onTagClick, searchQ
                 <Text
                   size="lg"
                   style={{
-                    color: 'var(--theme-text)',
+                    color: 'var(--theme-primary)',
                     fontWeight: 500,
                     fontFamily: 'monospace',
                   }}
@@ -88,8 +197,6 @@ export function RightSidebar({ entry, wordCount, isNewEntry, onTagClick, searchQ
                   {wordCount || 0}
                 </Text>
               </Box>
-
-              <Divider style={{ borderColor: 'var(--theme-border)' }} />
 
               {/* Current date */}
               <Box>
@@ -120,23 +227,21 @@ export function RightSidebar({ entry, wordCount, isNewEntry, onTagClick, searchQ
                 </Text>
               </Box>
 
-              <Divider style={{ borderColor: 'var(--theme-border)' }} />
-
-              {/* AI Questions */}
+              {/* Weather */}
               <Box>
                 <Text
                   size="xs"
                   style={{
                     color: 'var(--theme-text-secondary)',
-                    fontWeight: 600,
-                    marginBottom: '12px',
+                    fontWeight: 400,
+                    marginBottom: '8px',
                     textTransform: 'uppercase',
                     letterSpacing: '0.5px',
                   }}
                 >
-                  Вопросы от ИИ
+                  Погода
                 </Text>
-                {questionsLoading ? (
+                {weatherLoading ? (
                   <Group gap="xs" align="center">
                     <Loader size="sm" color="var(--theme-primary)" />
                     <Text
@@ -146,7 +251,95 @@ export function RightSidebar({ entry, wordCount, isNewEntry, onTagClick, searchQ
                         fontStyle: 'italic',
                       }}
                     >
-                      Загрузка вопросов...
+                      Загрузка...
+                    </Text>
+                  </Group>
+                ) : weatherError ? (
+                  <Text
+                    size="sm"
+                    style={{
+                      color: 'var(--theme-text-secondary)',
+                      fontStyle: 'italic',
+                    }}
+                  >
+                    {weatherError}
+                  </Text>
+                ) : weather ? (
+                  <Group gap="xs" align="center">
+                    {weather.icon && (
+                      <img
+                        src={getWeatherIconUrl(weather.icon)}
+                        alt={weather.description}
+                        style={{ width: '32px', height: '32px' }}
+                      />
+                    )}
+                    <Group gap={4} align="center">
+                      <IconTemperature size={16} style={{ color: 'var(--theme-text-secondary)' }} />
+                      <Text
+                        size="lg"
+                        style={{
+                          color: 'var(--theme-text)',
+                          fontWeight: 400,
+                          fontFamily: 'monospace',
+                        }}
+                      >
+                        {weather.temperature}°
+                      </Text>
+                    </Group>
+                  </Group>
+                ) : null}
+              </Box>
+
+              {/* AI Questions */}
+              <Box>
+                <Group justify="space-between" align="center" style={{ marginBottom: '16px' }}>
+                  <Group gap="xs" align="center">
+                    <IconSparkles 
+                      size={14} 
+                      style={{ 
+                        color: 'var(--theme-primary)',
+                        opacity: 0.8,
+                      }} 
+                    />
+                    <Text
+                      size="xs"
+                      style={{
+                        color: 'var(--theme-text-secondary)',
+                        fontWeight: 400,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.5px',
+                      }}
+                    >
+                      Вопросы от ИИ
+                    </Text>
+                  </Group>
+                  {onRefreshQuestions && rateLimitInfo && (
+                    <Text
+                      size="xs"
+                      style={{
+                        color: 'var(--theme-text-secondary)',
+                        fontWeight: 400,
+                      }}
+                    >
+                      {rateLimitInfo.remaining > 0 ? (
+                        `Осталось: ${rateLimitInfo.remaining}`
+                      ) : rateLimitInfo.resetTime ? (
+                        `Через: ${getTimeUntilReset(rateLimitInfo.resetTime)}`
+                      ) : null}
+                    </Text>
+                  )}
+                </Group>
+                {questionsLoading || refreshingQuestions ? (
+                  <Group gap="xs" align="center">
+                    <Loader size="sm" color="var(--theme-primary)" />
+                    <Text
+                      size="sm"
+                      style={{
+                        color: 'var(--theme-text-secondary)',
+                        fontStyle: 'italic',
+                      }}
+                    >
+                      {refreshingQuestions ? 'Загрузка новых вопросов...' : 'Загрузка вопросов...'}
                     </Text>
                   </Group>
                 ) : (
@@ -166,6 +359,22 @@ export function RightSidebar({ entry, wordCount, isNewEntry, onTagClick, searchQ
                         {question}
                       </Text>
                     ))}
+                    {onRefreshQuestions && (
+                      <Button
+                        variant="subtle"
+                        size="xs"
+                        leftSection={<IconRefresh size={14} />}
+                        onClick={handleRefreshQuestions}
+                        disabled={!rateLimitInfo?.allowed || refreshingQuestions}
+                        fullWidth
+                        style={{
+                          marginTop: '8px',
+                          color: rateLimitInfo?.allowed ? 'var(--theme-primary)' : 'var(--theme-text-secondary)',
+                        }}
+                      >
+                        Другие вопросы
+                      </Button>
+                    )}
                   </Stack>
                 )}
               </Box>
@@ -198,8 +407,6 @@ export function RightSidebar({ entry, wordCount, isNewEntry, onTagClick, searchQ
                 </Text>
               </Box>
 
-              <Divider style={{ borderColor: 'var(--theme-border)' }} />
-
               {/* Created date */}
               <Box>
                 <Text
@@ -224,8 +431,6 @@ export function RightSidebar({ entry, wordCount, isNewEntry, onTagClick, searchQ
                   {formatDate(entry.created_at)}
                 </Text>
               </Box>
-
-              <Divider style={{ borderColor: 'var(--theme-border)' }} />
 
               {/* Mood rating */}
               {entry.mood_rating !== null && (
@@ -268,9 +473,7 @@ export function RightSidebar({ entry, wordCount, isNewEntry, onTagClick, searchQ
 
               {/* Tags */}
               {entry.tags && entry.tags.length > 0 && (
-                <>
-                  <Divider style={{ borderColor: 'var(--theme-border)' }} />
-                  <Box>
+                <Box>
                     <Text
                       size="xs"
                       style={{
@@ -324,7 +527,6 @@ export function RightSidebar({ entry, wordCount, isNewEntry, onTagClick, searchQ
                       })}
                     </Group>
                   </Box>
-                </>
               )}
 
             </>

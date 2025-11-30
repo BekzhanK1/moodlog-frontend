@@ -225,9 +225,9 @@ export function MoodTrendGraph() {
     return (
       <Card
         padding={isMobile ? 'md' : 'lg'}
-        radius="md"
+        radius="lg"
         style={{
-          backgroundColor: 'var(--theme-bg)',
+          backgroundColor: 'var(--theme-surface)',
           border: '1px solid var(--theme-border)',
           minHeight: '200px',
         }}
@@ -253,23 +253,44 @@ export function MoodTrendGraph() {
                   { value: 'year', label: 'Год' },
                 ]}
                 size="sm"
-                style={{ width: isMobile ? '90px' : '110px' }}
+                style={{ width: isMobile ? '100px' : '120px' }}
                 styles={{
                   input: {
                     backgroundColor: 'var(--theme-bg)',
                     color: 'var(--theme-text)',
                     border: '1px solid var(--theme-border)',
+                    borderRadius: '8px',
+                    transition: 'all 0.2s ease',
+                    '&:focus': {
+                      borderColor: 'var(--theme-primary)',
+                      borderWidth: '2px',
+                      boxShadow: '0 0 0 3px color-mix(in srgb, var(--theme-primary) 10%, transparent)',
+                    },
+                    '&:hover': {
+                      borderColor: 'var(--theme-primary)',
+                    },
                   },
                   option: {
-                    backgroundColor: 'var(--theme-bg)',
+                    backgroundColor: 'var(--theme-surface)',
                     color: 'var(--theme-text)',
-                    '&:hover': {
+                    borderRadius: '6px',
+                    padding: '8px 12px',
+                    marginBottom: '4px',
+                    transition: 'all 0.2s ease',
+                    '&[data-selected]': {
+                      backgroundColor: 'var(--theme-hover)',
+                      color: 'var(--theme-text)',
+                    },
+                    '&[data-hovered]': {
                       backgroundColor: 'var(--theme-hover)',
                     },
                   },
                   dropdown: {
-                    backgroundColor: 'var(--theme-bg)',
+                    backgroundColor: 'var(--theme-surface)',
                     border: '1px solid var(--theme-border)',
+                    borderRadius: '12px',
+                    padding: '8px',
+                    boxShadow: '0 8px 24px rgba(0, 0, 0, 0.15)',
                   },
                 }}
               />
@@ -279,6 +300,15 @@ export function MoodTrendGraph() {
                 onClick={handlePrevious}
                 style={{
                   color: 'var(--theme-text)',
+                  transition: 'all 0.2s ease',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = 'var(--theme-hover)'
+                  e.currentTarget.style.color = 'var(--theme-primary)'
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent'
+                  e.currentTarget.style.color = 'var(--theme-text)'
                 }}
               >
                 <IconChevronLeft size={16} />
@@ -336,10 +366,20 @@ export function MoodTrendGraph() {
     return (
       <Card
         padding={isMobile ? 'md' : 'lg'}
-        radius="md"
+        radius="lg"
         style={{
-          backgroundColor: 'var(--theme-bg)',
+          backgroundColor: 'var(--theme-surface)',
           border: '1px solid var(--theme-border)',
+          transition: 'all 0.3s ease',
+          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.05)',
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.boxShadow = '0 4px 16px rgba(0, 0, 0, 0.1)'
+          e.currentTarget.style.transform = 'translateY(-2px)'
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.05)'
+          e.currentTarget.style.transform = 'translateY(0)'
         }}
       >
         <Stack gap="md">
@@ -363,23 +403,44 @@ export function MoodTrendGraph() {
                   { value: 'year', label: 'Год' },
                 ]}
                 size="sm"
-                style={{ width: isMobile ? '90px' : '110px' }}
+                style={{ width: isMobile ? '100px' : '120px' }}
                 styles={{
                   input: {
                     backgroundColor: 'var(--theme-bg)',
                     color: 'var(--theme-text)',
                     border: '1px solid var(--theme-border)',
+                    borderRadius: '8px',
+                    transition: 'all 0.2s ease',
+                    '&:focus': {
+                      borderColor: 'var(--theme-primary)',
+                      borderWidth: '2px',
+                      boxShadow: '0 0 0 3px color-mix(in srgb, var(--theme-primary) 10%, transparent)',
+                    },
+                    '&:hover': {
+                      borderColor: 'var(--theme-primary)',
+                    },
                   },
                   option: {
-                    backgroundColor: 'var(--theme-bg)',
+                    backgroundColor: 'var(--theme-surface)',
                     color: 'var(--theme-text)',
-                    '&:hover': {
+                    borderRadius: '6px',
+                    padding: '8px 12px',
+                    marginBottom: '4px',
+                    transition: 'all 0.2s ease',
+                    '&[data-selected]': {
+                      backgroundColor: 'var(--theme-hover)',
+                      color: 'var(--theme-text)',
+                    },
+                    '&[data-hovered]': {
                       backgroundColor: 'var(--theme-hover)',
                     },
                   },
                   dropdown: {
-                    backgroundColor: 'var(--theme-bg)',
+                    backgroundColor: 'var(--theme-surface)',
                     border: '1px solid var(--theme-border)',
+                    borderRadius: '12px',
+                    padding: '8px',
+                    boxShadow: '0 8px 24px rgba(0, 0, 0, 0.15)',
                   },
                 }}
               />
@@ -389,6 +450,15 @@ export function MoodTrendGraph() {
                 onClick={handlePrevious}
                 style={{
                   color: 'var(--theme-text)',
+                  transition: 'all 0.2s ease',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = 'var(--theme-hover)'
+                  e.currentTarget.style.color = 'var(--theme-primary)'
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent'
+                  e.currentTarget.style.color = 'var(--theme-text)'
                 }}
               >
                 <IconChevronLeft size={16} />
@@ -470,10 +540,20 @@ export function MoodTrendGraph() {
   return (
     <Card
       padding={isMobile ? 'md' : 'lg'}
-      radius="md"
+      radius="lg"
       style={{
-        backgroundColor: 'var(--theme-bg)',
+        backgroundColor: 'var(--theme-surface)',
         border: '1px solid var(--theme-border)',
+        transition: 'all 0.3s ease',
+        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.05)',
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.boxShadow = '0 4px 16px rgba(0, 0, 0, 0.1)'
+        e.currentTarget.style.transform = 'translateY(-2px)'
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.05)'
+        e.currentTarget.style.transform = 'translateY(0)'
       }}
     >
       <Stack gap="md">
@@ -497,23 +577,44 @@ export function MoodTrendGraph() {
                   { value: 'year', label: 'Год' },
                 ]}
                 size="sm"
-                style={{ width: isMobile ? '90px' : '110px' }}
+                style={{ width: isMobile ? '100px' : '120px' }}
                 styles={{
                   input: {
                     backgroundColor: 'var(--theme-bg)',
                     color: 'var(--theme-text)',
                     border: '1px solid var(--theme-border)',
+                    borderRadius: '8px',
+                    transition: 'all 0.2s ease',
+                    '&:focus': {
+                      borderColor: 'var(--theme-primary)',
+                      borderWidth: '2px',
+                      boxShadow: '0 0 0 3px color-mix(in srgb, var(--theme-primary) 10%, transparent)',
+                    },
+                    '&:hover': {
+                      borderColor: 'var(--theme-primary)',
+                    },
                   },
                   option: {
-                    backgroundColor: 'var(--theme-bg)',
+                    backgroundColor: 'var(--theme-surface)',
                     color: 'var(--theme-text)',
-                    '&:hover': {
+                    borderRadius: '6px',
+                    padding: '8px 12px',
+                    marginBottom: '4px',
+                    transition: 'all 0.2s ease',
+                    '&[data-selected]': {
+                      backgroundColor: 'var(--theme-hover)',
+                      color: 'var(--theme-text)',
+                    },
+                    '&[data-hovered]': {
                       backgroundColor: 'var(--theme-hover)',
                     },
                   },
                   dropdown: {
-                    backgroundColor: 'var(--theme-bg)',
+                    backgroundColor: 'var(--theme-surface)',
                     border: '1px solid var(--theme-border)',
+                    borderRadius: '12px',
+                    padding: '8px',
+                    boxShadow: '0 8px 24px rgba(0, 0, 0, 0.15)',
                   },
                 }}
               />
@@ -523,6 +624,15 @@ export function MoodTrendGraph() {
                 onClick={handlePrevious}
                 style={{
                   color: 'var(--theme-text)',
+                  transition: 'all 0.2s ease',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = 'var(--theme-hover)'
+                  e.currentTarget.style.color = 'var(--theme-primary)'
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent'
+                  e.currentTarget.style.color = 'var(--theme-text)'
                 }}
               >
                 <IconChevronLeft size={16} />

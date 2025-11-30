@@ -1,7 +1,7 @@
-import { Box, Text, Stack, Group, Grid, Button } from '@mantine/core'
+import { Box, Text, Stack, Group, Grid, Button, Title } from '@mantine/core'
 import { useMediaQuery } from '@mantine/hooks'
 import { useNavigate } from 'react-router-dom'
-import { IconArrowLeft } from '@tabler/icons-react'
+import { IconArrowLeft, IconChartLine } from '@tabler/icons-react'
 import { Navbar } from '../components/dashboard/Navbar'
 import { useAuth } from '../contexts/AuthContext'
 import { useEffect } from 'react'
@@ -67,34 +67,67 @@ export function AnalyticsPage() {
       >
         <Stack gap="xl">
           {/* Header */}
-          <Group gap="md" align="center" wrap="wrap">
-            <Button
-              variant="subtle"
-              leftSection={<IconArrowLeft size={18} />}
-              onClick={() => navigate('/dashboard')}
-              style={{
-                color: 'var(--theme-text)',
-                backgroundColor: 'transparent',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = 'var(--theme-hover)'
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'transparent'
-              }}
-            >
-              Назад
-            </Button>
-            <Text
-              style={{
-                fontSize: isMobile ? '28px' : '36px',
-                fontWeight: 400,
-                color: 'var(--theme-text)',
-              }}
-            >
-              Аналитика
-            </Text>
-          </Group>
+          <Stack gap="md">
+            <Group gap="md" align="center">
+              <Button
+                variant="subtle"
+                leftSection={<IconArrowLeft size={18} />}
+                onClick={() => navigate('/dashboard')}
+                style={{
+                  color: 'var(--theme-text)',
+                  backgroundColor: 'transparent',
+                  transition: 'all 0.2s ease',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = 'var(--theme-hover)'
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent'
+                }}
+              >
+                Назад
+              </Button>
+            </Group>
+            <Group gap="md" align="center">
+              <Box
+                style={{
+                  width: '48px',
+                  height: '48px',
+                  borderRadius: '12px',
+                  backgroundColor: 'var(--theme-primary)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'var(--theme-bg)',
+                }}
+              >
+                <IconChartLine size={24} />
+              </Box>
+              <Box>
+                <Title
+                  order={1}
+                  style={{
+                    fontSize: isMobile ? '28px' : '36px',
+                    fontWeight: 600,
+                    color: 'var(--theme-text)',
+                    margin: 0,
+                    lineHeight: 1.2,
+                  }}
+                >
+                  Аналитика
+                </Title>
+                <Text
+                  size="sm"
+                  style={{
+                    color: 'var(--theme-text-secondary)',
+                    marginTop: '4px',
+                  }}
+                >
+                  Анализ вашего настроения и записей
+                </Text>
+              </Box>
+            </Group>
+          </Stack>
 
           {/* Analytics Cards */}
           <Grid gutter={isMobile ? 'md' : 'lg'}>

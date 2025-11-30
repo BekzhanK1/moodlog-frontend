@@ -1,6 +1,6 @@
 import { Card, Text, Stack, Group, Box, Divider, Button, ActionIcon } from '@mantine/core'
 import { useMediaQuery } from '@mantine/hooks'
-import { IconBrain, IconTrendingUp, IconSparkles, IconBulb, IconChevronLeft, IconChevronRight, IconCalendar, IconList } from '@tabler/icons-react'
+import { IconBrain, IconTrendingUp, IconSparkles, IconBulb, IconChevronLeft, IconChevronRight, IconCalendar, IconList, IconChevronDown, IconChevronUp } from '@tabler/icons-react'
 import { useEffect, useState } from 'react'
 import { apiClient } from '../../utils/api'
 import { InsightsListModal } from './InsightsListModal'
@@ -49,6 +49,7 @@ export function WeeklySummaryCard() {
   const [generating, setGenerating] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [listModalOpened, setListModalOpened] = useState(false)
+  const [isCollapsed, setIsCollapsed] = useState(false)
   
   // Состояние для текущей недели
   const now = new Date()
@@ -229,23 +230,52 @@ export function WeeklySummaryCard() {
   return (
     <Card
       padding={isMobile ? 'md' : 'lg'}
-      radius="md"
+      radius="lg"
       style={{
-        backgroundColor: 'var(--theme-bg)',
+        backgroundColor: 'var(--theme-surface)',
         border: '1px solid var(--theme-border)',
+        transition: 'all 0.3s ease',
+        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.05)',
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.boxShadow = '0 4px 16px rgba(0, 0, 0, 0.1)'
+        e.currentTarget.style.transform = 'translateY(-2px)'
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.05)'
+        e.currentTarget.style.transform = 'translateY(0)'
       }}
     >
       <Stack gap="lg">
         <Group justify="space-between" align="center" wrap="wrap">
-          <Text
-            style={{
-              fontSize: isMobile ? '18px' : '20px',
-              fontWeight: 600,
-              color: 'var(--theme-text)',
-            }}
-          >
-            Еженедельная сводка от ИИ
-          </Text>
+          <Group gap="xs" align="center">
+            <ActionIcon
+              variant="subtle"
+              size="sm"
+              onClick={() => setIsCollapsed(!isCollapsed)}
+              style={{
+                color: 'var(--theme-text)',
+                transition: 'all 0.2s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = 'var(--theme-hover)'
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'transparent'
+              }}
+            >
+              {isCollapsed ? <IconChevronDown size={18} /> : <IconChevronUp size={18} />}
+            </ActionIcon>
+            <Text
+              style={{
+                fontSize: isMobile ? '18px' : '20px',
+                fontWeight: 600,
+                color: 'var(--theme-text)',
+              }}
+            >
+              Еженедельная сводка от ИИ
+            </Text>
+          </Group>
           <Group gap="xs" wrap="nowrap">
             <ActionIcon
               variant="subtle"
@@ -304,7 +334,9 @@ export function WeeklySummaryCard() {
           onSelect={handleSelectFromList}
         />
 
-        {loading && (
+        {!isCollapsed && (
+          <>
+            {loading && (
           <Box style={{ textAlign: 'center', padding: '40px 0' }}>
             <Text style={{ color: 'var(--theme-text-secondary)' }}>Загрузка сводки...</Text>
           </Box>
@@ -638,6 +670,8 @@ export function WeeklySummaryCard() {
               </>
             )}
           </Stack>
+        )}
+          </>
         )}
       </Stack>
     </Card>

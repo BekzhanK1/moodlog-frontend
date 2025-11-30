@@ -5,6 +5,7 @@ import { useMediaQuery } from '@mantine/hooks'
 import { IconAlertCircle, IconPlus, IconChartLine } from '@tabler/icons-react'
 import { useAuth } from '../contexts/AuthContext'
 import { apiClient, EntryResponse, EntryListResponse } from '../utils/api'
+import { getEditorFont } from '../utils/fonts'
 import { Navbar } from '../components/dashboard/Navbar'
 import { Sidebar } from '../components/dashboard/Sidebar'
 import { EntryView } from '../components/dashboard/EntryView'
@@ -89,29 +90,154 @@ export function DashboardPage() {
     }
   }, [isAuthenticated, authLoading, fetchEntries])
 
-  // Fetch writing questions when entries change
-  useEffect(() => {
-    const fetchQuestions = async () => {
-      if (isAuthenticated && !authLoading) {
-        setQuestionsLoading(true)
+  // Rate limiting for question refresh requests
+  const canRequestNewQuestions = useCallback((): { allowed: boolean; remaining: number; resetTime: number | null } => {
+    if (!user) {
+      return { allowed: false, remaining: 0, resetTime: null }
+    }
+
+    const RATE_LIMIT_KEY = `ai_questions_rate_limit_${user.id}`
+    const MAX_REQUESTS = 5
+    const RATE_LIMIT_WINDOW = 60 * 60 * 1000 // 1 hour
+
+    try {
+      const stored = localStorage.getItem(RATE_LIMIT_KEY)
+      const now = Date.now()
+
+      if (!stored) {
+        return { allowed: true, remaining: MAX_REQUESTS, resetTime: now + RATE_LIMIT_WINDOW }
+      }
+
+      const { requests } = JSON.parse(stored)
+      // Filter out requests older than 1 hour
+      const recentRequests = requests.filter((timestamp: number) => now - timestamp < RATE_LIMIT_WINDOW)
+
+      const remaining = MAX_REQUESTS - recentRequests.length
+      const oldestRequest = recentRequests.length > 0 ? Math.min(...recentRequests) : null
+      const resetTime = oldestRequest ? oldestRequest + RATE_LIMIT_WINDOW : null
+
+      return {
+        allowed: remaining > 0,
+        remaining: Math.max(0, remaining),
+        resetTime
+      }
+    } catch (error) {
+      console.error('Failed to check rate limit:', error)
+      return { allowed: true, remaining: MAX_REQUESTS, resetTime: null }
+    }
+  }, [user])
+
+  const recordQuestionRequest = useCallback(() => {
+    if (!user) return
+
+    const RATE_LIMIT_KEY = `ai_questions_rate_limit_${user.id}`
+    const RATE_LIMIT_WINDOW = 60 * 60 * 1000 // 1 hour
+    const now = Date.now()
+
+    try {
+      const stored = localStorage.getItem(RATE_LIMIT_KEY)
+      let requests: number[] = []
+
+      if (stored) {
+        const parsed = JSON.parse(stored)
+        // Filter out requests older than 1 hour
+        requests = parsed.requests.filter((timestamp: number) => now - timestamp < RATE_LIMIT_WINDOW)
+      }
+
+      requests.push(now)
+      localStorage.setItem(RATE_LIMIT_KEY, JSON.stringify({ requests }))
+    } catch (error) {
+      console.error('Failed to record question request:', error)
+    }
+  }, [user])
+
+  // Function to fetch writing questions with caching
+  const fetchQuestions = useCallback(async (forceRefresh: boolean = false) => {
+    if (isAuthenticated && !authLoading && user) {
+      const CACHE_KEY = `ai_questions_${user.id}`
+      const CACHE_DURATION = 60 * 60 * 1000 // 1 hour in milliseconds
+
+      // Check cache first (unless force refresh)
+      if (!forceRefresh) {
         try {
-          const response = await apiClient.getWritingQuestion(5, 3)
-          setWritingQuestions(response.questions)
+          const cached = localStorage.getItem(CACHE_KEY)
+          if (cached) {
+            const { questions, timestamp } = JSON.parse(cached)
+            const now = Date.now()
+            
+            // If cache is still valid, use it
+            if (now - timestamp < CACHE_DURATION) {
+              setWritingQuestions(questions)
+              setQuestionsLoading(false)
+              return
+            }
+          }
         } catch (error) {
-          console.error('Failed to fetch writing questions:', error)
-          // Fallback to default questions on error
-          setWritingQuestions([
-            'О чем вы думали в последнее время?',
-            'Что вас сейчас волнует?',
-            'Как вы себя чувствуете сегодня?'
-          ])
-        } finally {
-          setQuestionsLoading(false)
+          console.error('Failed to read questions cache:', error)
+          // Continue to fetch if cache read fails
         }
       }
+
+      // Fetch from API
+      setQuestionsLoading(true)
+      try {
+        const response = await apiClient.getWritingQuestion(10, 3)
+        setWritingQuestions(response.questions)
+        
+        // Cache the questions
+        try {
+          localStorage.setItem(CACHE_KEY, JSON.stringify({
+            questions: response.questions,
+            timestamp: Date.now()
+          }))
+        } catch (error) {
+          console.error('Failed to cache questions:', error)
+          // Non-critical error, continue
+        }
+      } catch (error) {
+        console.error('Failed to fetch writing questions:', error)
+        
+        // Try to use cached questions even if expired as fallback
+        try {
+          const cached = localStorage.getItem(CACHE_KEY)
+          if (cached) {
+            const { questions } = JSON.parse(cached)
+            setWritingQuestions(questions)
+            return
+          }
+        } catch (cacheError) {
+          // Ignore cache errors
+        }
+        
+        // Fallback to default questions on error
+        setWritingQuestions([
+          'О чем вы думали в последнее время?',
+          'Что вас сейчас волнует?',
+          'Как вы себя чувствуете сегодня?'
+        ])
+      } finally {
+        setQuestionsLoading(false)
+      }
     }
+  }, [isAuthenticated, authLoading, user])
+
+  // Function to refresh questions (with rate limiting)
+  const refreshQuestions = useCallback(async () => {
+    const rateLimit = canRequestNewQuestions()
+    
+    if (!rateLimit.allowed) {
+      return { success: false, message: 'Превышен лимит запросов. Попробуйте позже.' }
+    }
+
+    recordQuestionRequest()
+    await fetchQuestions(true)
+    return { success: true }
+  }, [canRequestNewQuestions, recordQuestionRequest, fetchQuestions])
+
+  // Fetch writing questions once when authenticated
+  useEffect(() => {
     fetchQuestions()
-  }, [isAuthenticated, authLoading, entries.length]) // Update when entries change
+  }, [fetchQuestions]) // Only fetch once when authenticated
 
   // Refetch entries when search query changes
   useEffect(() => {
@@ -380,6 +506,11 @@ export function DashboardPage() {
         // Refresh entries list one more time to ensure it's up to date
         await fetchEntries(1, false)
 
+        // Refresh questions since a new entry was published (force refresh to invalidate cache)
+        fetchQuestions(true).catch(() => {
+          // Silently handle errors
+        })
+
         // Select the new entry
         setSelectedEntry(updatedEntry)
         setSearchParams({ entry: updatedEntry.id })
@@ -393,7 +524,7 @@ export function DashboardPage() {
       setIsSaving(false)
       setIsAnalyzing(false)
     }
-  }, [fetchEntries, logout, setSearchParams, isEditingEntry, selectedEntry, draftEntryId])
+  }, [fetchEntries, logout, setSearchParams, isEditingEntry, selectedEntry, draftEntryId, fetchQuestions])
 
   // Show loading while auth is being checked or entries are loading
   if (authLoading || (loading && entries.length === 0)) {
@@ -713,6 +844,7 @@ export function DashboardPage() {
               isEditing={isEditingEntry}
               writingQuestions={writingQuestions}
               questionsLoading={questionsLoading}
+              fontFamily={getEditorFont()}
             />
           ) : selectedEntry ? (
             <Box
@@ -748,6 +880,8 @@ export function DashboardPage() {
             onTagClick={handleTagClick}
             writingQuestions={writingQuestions}
             questionsLoading={questionsLoading}
+            onRefreshQuestions={refreshQuestions}
+            canRefreshQuestions={canRequestNewQuestions}
           />
         )}
       </Box>
