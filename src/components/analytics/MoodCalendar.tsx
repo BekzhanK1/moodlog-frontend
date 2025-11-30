@@ -3,6 +3,7 @@ import { useMediaQuery } from '@mantine/hooks'
 import { IconChevronLeft, IconChevronRight, IconCalendar } from '@tabler/icons-react'
 import { useEffect, useState } from 'react'
 import { apiClient } from '../../utils/api'
+import { getUserTimezoneOffset } from '../../utils/timezone'
 
 interface CalendarDay {
   date: string
@@ -50,7 +51,8 @@ export function MoodCalendar() {
           endDate = new Date(year, month, lastDay).toISOString().split('T')[0]
         }
         
-        const result = await apiClient.getMoodTrend(startDate, endDate)
+        const timezoneOffset = getUserTimezoneOffset()
+        const result = await apiClient.getMoodTrend(startDate, endDate, timezoneOffset)
         setData(result)
         
         // Минимальная задержка для плавности

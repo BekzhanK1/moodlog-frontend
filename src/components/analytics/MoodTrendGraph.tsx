@@ -3,6 +3,7 @@ import { useMediaQuery } from '@mantine/hooks'
 import { IconChevronLeft, IconChevronRight, IconCalendar } from '@tabler/icons-react'
 import { useEffect, useState } from 'react'
 import { apiClient } from '../../utils/api'
+import { getUserTimezoneOffset } from '../../utils/timezone'
 
 interface DataPoint {
   date: string
@@ -42,16 +43,18 @@ export function MoodTrendGraph() {
         let endDate: string
         let rawData: DataPoint[]
 
+        const timezoneOffset = getUserTimezoneOffset()
+        
         if (viewType === 'week') {
           const { start, end } = getWeekDates(currentDate)
           startDate = start.toISOString().split('T')[0]
           endDate = end.toISOString().split('T')[0]
-          rawData = await apiClient.getMoodTrend(startDate, endDate)
+          rawData = await apiClient.getMoodTrend(startDate, endDate, timezoneOffset)
         } else if (viewType === 'year') {
           // Запрашиваем данные за весь год
           startDate = new Date(year, 0, 1).toISOString().split('T')[0]
           endDate = new Date(year, 11, 31).toISOString().split('T')[0]
-          rawData = await apiClient.getMoodTrend(startDate, endDate)
+          rawData = await apiClient.getMoodTrend(startDate, endDate, timezoneOffset)
           
           // Группируем данные по месяцам и вычисляем средний рейтинг
           const monthlyData: { [key: number]: { ratings: number[]; numEntries: number } } = {}
@@ -92,7 +95,7 @@ export function MoodTrendGraph() {
           startDate = new Date(year, month, 1).toISOString().split('T')[0]
           const lastDay = new Date(year, month + 1, 0).getDate()
           endDate = new Date(year, month, lastDay).toISOString().split('T')[0]
-          rawData = await apiClient.getMoodTrend(startDate, endDate)
+          rawData = await apiClient.getMoodTrend(startDate, endDate, timezoneOffset)
         }
         
         setData(rawData)
