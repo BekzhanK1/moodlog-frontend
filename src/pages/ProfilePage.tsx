@@ -65,7 +65,7 @@ export function ProfilePage() {
         padding: isMobile ? '20px 16px' : '40px',
       }}
     >
-      <Container size="md">
+      <Container size={isMobile ? '100%' : 'md'}>
         <Stack gap="xl">
           {/* Header */}
           <Stack gap="md">
