@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import {
   Box,
   Stack,
@@ -50,6 +50,11 @@ export function RightSidebar({
   const [weatherError, setWeatherError] = useState<string | null>(null)
   const [refreshingQuestions, setRefreshingQuestions] = useState(false)
   const [rateLimitInfo, setRateLimitInfo] = useState<{ allowed: boolean; remaining: number; resetTime: number | null } | null>(null)
+  const [completedQuestions, setCompletedQuestions] = useState<Set<string>>(new Set())
+
+  const COMPLETED_STORAGE_KEY = 'moodlog_ai_questions_completed_new_entry'
+  const questionsKey = writingQuestions.join('|')
+  const prevQuestionsKeyRef = useRef<string | null>(null)
 
   // Update rate limit info periodically
   useEffect(() => {
@@ -64,6 +69,59 @@ export function RightSidebar({
       return () => clearInterval(interval)
     }
   }, [canRefreshQuestions, isNewEntry])
+
+  // Load completed questions from localStorage for new entry
+  useEffect(() => {
+    if (!isNewEntry) return
+    try {
+      const raw = localStorage.getItem(COMPLETED_STORAGE_KEY)
+      if (raw) {
+        const parsed = JSON.parse(raw) as string[]
+        if (Array.isArray(parsed)) {
+          setCompletedQuestions(new Set(parsed))
+        }
+      }
+    } catch (e) {
+      console.error('Failed to load completed AI questions from localStorage', e)
+    }
+  }, [isNewEntry])
+
+  // Reset completed questions only when the questions list actually changes (e.g. after refresh)
+  useEffect(() => {
+    if (!isNewEntry) return
+
+    const prevKey = prevQuestionsKeyRef.current
+    if (prevKey !== null && prevKey !== questionsKey) {
+      setCompletedQuestions(new Set())
+      try {
+        localStorage.removeItem(COMPLETED_STORAGE_KEY)
+      } catch (e) {
+        console.error('Failed to clear completed AI questions from localStorage', e)
+      }
+    }
+    prevQuestionsKeyRef.current = questionsKey
+  }, [questionsKey, isNewEntry])
+
+  const toggleQuestionCompleted = (question: string) => {
+    setCompletedQuestions((prev) => {
+      const next = new Set(prev)
+      if (next.has(question)) {
+        next.delete(question)
+      } else {
+        next.add(question)
+      }
+
+      // Persist to localStorage for new entry questions
+      try {
+        const arr = Array.from(next)
+        localStorage.setItem(COMPLETED_STORAGE_KEY, JSON.stringify(arr))
+      } catch (e) {
+        console.error('Failed to save completed AI questions to localStorage', e)
+      }
+
+      return next
+    })
+  }
 
   const handleRefreshQuestions = async () => {
     if (!onRefreshQuestions || !rateLimitInfo?.allowed || refreshingQuestions) return
@@ -345,21 +403,34 @@ export function RightSidebar({
                   </Group>
                 ) : (
                   <Stack gap="sm">
-                    {writingQuestions.map((question, index) => (
-                      <Text
-                        key={index}
-                        size="sm"
-                        style={{
-                          color: 'var(--theme-text)',
-                          fontWeight: 400,
-                          lineHeight: 1.6,
-                          opacity: 0,
-                          animation: `fadeInUp 0.6s ease-out ${index * 0.15 + 0.2}s forwards`,
-                        }}
-                      >
-                        {question}
-                      </Text>
-                    ))}
+                    {writingQuestions.map((question, index) => {
+                      const isCompleted = completedQuestions.has(question)
+                      return (
+                        <Box
+                          key={`${index}-${question}`}
+                          onClick={() => toggleQuestionCompleted(question)}
+                          style={{
+                            cursor: 'pointer',
+                            opacity: 0,
+                            animation: `fadeInUp 0.6s ease-out ${index * 0.15 + 0.2}s forwards`,
+                          }}
+                        >
+                          <Text
+                            size="sm"
+                            style={{
+                              color: 'var(--theme-text)',
+                              fontWeight: 400,
+                              lineHeight: 1.6,
+                              textDecoration: isCompleted ? 'line-through' : 'none',
+                              opacity: isCompleted ? 0.5 : 1,
+                              transition: 'opacity 0.2s ease, text-decoration-color 0.2s ease',
+                            }}
+                          >
+                            {question}
+                          </Text>
+                        </Box>
+                      )
+                    })}
                     {onRefreshQuestions && (
                       <Button
                         variant="subtle"
@@ -367,9 +438,9 @@ export function RightSidebar({
                         leftSection={<IconRefresh size={14} />}
                         onClick={handleRefreshQuestions}
                         disabled={!rateLimitInfo?.allowed || refreshingQuestions}
-                        fullWidth
                         style={{
                           marginTop: '8px',
+                          alignSelf: 'flex-end',
                           color: rateLimitInfo?.allowed ? 'var(--theme-primary)' : 'var(--theme-text-secondary)',
                         }}
                       >

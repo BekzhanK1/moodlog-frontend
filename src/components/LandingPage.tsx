@@ -164,14 +164,20 @@ function LandingPage() {
       >
         <Group justify="space-between" align="center">
           <Group gap="xs" align="center">
-            <Image
-              src="/moodlog-logo-black.png"
-              alt="MoodLog"
-              h={28}
-              mah={28}
-              fit="contain"
-              style={{ display: 'block' }}
-            />
+            <Box
+              component={Link}
+              to="/"
+              style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}
+            >
+              <Image
+                src="/moodlog-logo-black.png"
+                alt="MoodLog"
+                h={28}
+                mah={28}
+                fit="contain"
+                style={{ display: 'block' }}
+              />
+            </Box>
           </Group>
           <Button
             onClick={handleLoginClick}

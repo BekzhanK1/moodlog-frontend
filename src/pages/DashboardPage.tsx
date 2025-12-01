@@ -663,7 +663,7 @@ export function DashboardPage() {
             flex: 1,
             backgroundColor: 'var(--theme-bg)',
             height: '100%',
-            paddingBottom: isMobile ? '100px' : '0',
+            paddingBottom: isMobile ? '160px' : '0',
           }}
         >
           {showAudioRecorder ? (
@@ -886,12 +886,12 @@ export function DashboardPage() {
         )}
       </Box>
 
-      {/* Mobile Floating Action Buttons - Hidden when editing/creating */}
-      {isMobile && !isNewEntry && !isEditingEntry && (
+      {/* Mobile Floating Action Buttons - Hidden when editing/creating or recording */}
+      {isMobile && !isNewEntry && !isEditingEntry && !showAudioRecorder && (
         <Box
           style={{
             position: 'fixed',
-            bottom: '24px',
+            bottom: '64px',
             left: '50%',
             transform: 'translateX(-50%)',
             display: 'flex',

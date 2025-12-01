@@ -1,6 +1,7 @@
 import { Box, Container, Stack, Image, Group } from '@mantine/core'
 import { useMediaQuery } from '@mantine/hooks'
 import { ReactNode } from 'react'
+import { Link } from 'react-router-dom'
 
 interface AuthLayoutProps {
   children: ReactNode
@@ -76,14 +77,20 @@ export function AuthLayout({ children, title, subtitle }: AuthLayoutProps) {
       >
         <Group justify="space-between" align="center">
           <Group gap="xs" align="center">
-            <Image
-              src="/moodlog-logo-black.png"
-              alt="MoodLog"
-              h={28}
-              mah={28}
-              fit="contain"
-              style={{ display: 'block' }}
-            />
+            <Box
+              component={Link}
+              to="/"
+              style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}
+            >
+              <Image
+                src="/moodlog-logo-black.png"
+                alt="MoodLog"
+                h={28}
+                mah={28}
+                fit="contain"
+                style={{ display: 'block' }}
+              />
+            </Box>
           </Group>
         </Group>
       </Box>
