@@ -30,12 +30,12 @@ interface NewEntryEditorProps {
 }
 
 export const NewEntryEditor = forwardRef<NewEntryEditorHandle, NewEntryEditorProps>(
-  function NewEntryEditor({ 
-    onContentChange, 
-    onSave, 
+  function NewEntryEditor({
+    onContentChange,
+    onSave,
     onAutoSave,
     onClose,
-    isSaving = false, 
+    isSaving = false,
     wordCount = 0,
     initialTitle = '',
     initialContent = '',
@@ -179,62 +179,104 @@ export const NewEntryEditor = forwardRef<NewEntryEditorHandle, NewEntryEditorPro
     return (
       <>
         <Box
-        style={{
-          padding: isMobile ? '20px 16px' : '40px',
-          paddingBottom: isMobile ? '100px' : '120px',
-          maxWidth: '800px',
-          margin: '0 auto',
-          backgroundColor: 'var(--theme-bg)',
-          position: 'relative',
-        }}
-      >
+          style={{
+            padding: isMobile ? '20px 16px' : '40px',
+            paddingBottom: isMobile ? '80px' : '40px',
+            maxWidth: '800px',
+            margin: '0 auto',
+            backgroundColor: 'var(--theme-bg)',
+            position: 'relative',
+          }}
+        >
         <Stack gap="lg">
-          {/* Close button and auto-save indicator */}
+          {/* Close button, auto-save indicator and save button */}
           <Group justify="space-between" align="center" style={{ marginTop: '-8px', marginBottom: '-8px' }}>
-            {/* Close button */}
-            {onClose && (
-              <Button
-                variant="subtle"
-                leftSection={<IconX size={16} />}
-                size={isMobile ? 'sm' : 'md'}
-                onClick={onClose}
-                radius="md"
-                style={{
-                  color: 'var(--theme-text)',
-                  backgroundColor: 'transparent',
-                  border: '1px solid var(--theme-border)',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = 'var(--theme-hover)'
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = 'transparent'
-                }}
-              >
-                {isEditing ? 'Отмена' : 'Закрыть'}
-              </Button>
-            )}
-            
-            {/* Auto-save indicator */}
-            {(isAutoSaving || lastSaved) && (
-              <Group gap={4}>
-                {isAutoSaving ? (
-                  <>
-                    <IconLoader size={14} style={{ color: 'var(--theme-text-secondary)', animation: 'spin 1s linear infinite' }} />
-                    <Text size="xs" style={{ color: 'var(--theme-text-secondary)' }}>
-                      Сохранение...
-                    </Text>
-                  </>
-                ) : lastSaved ? (
-                  <>
-                    <IconCheck size={14} style={{ color: 'var(--theme-primary)' }} />
-                    <Text size="xs" style={{ color: 'var(--theme-text-secondary)' }}>
-                      Сохранено {lastSaved.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
-                    </Text>
-                  </>
-                ) : null}
-              </Group>
-            )}
+            <Group gap={isMobile ? 8 : 12} align="center">
+              {/* Close button */}
+              {onClose && (
+                <Button
+                  variant="subtle"
+                  leftSection={<IconX size={16} />}
+                  size={isMobile ? 'sm' : 'md'}
+                  onClick={onClose}
+                  radius="md"
+                  style={{
+                    color: 'var(--theme-text)',
+                    backgroundColor: 'transparent',
+                    border: '1px solid var(--theme-border)',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = 'var(--theme-hover)'
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'transparent'
+                  }}
+                >
+                  {isEditing ? 'Отмена' : 'Закрыть'}
+                </Button>
+              )}
+
+              {/* Auto-save indicator */}
+              {(isAutoSaving || lastSaved) && (
+                <Group gap={4} align="center">
+                  {isAutoSaving ? (
+                    <>
+                      <IconLoader
+                        size={14}
+                        style={{ color: 'var(--theme-text-secondary)', animation: 'spin 1s linear infinite' }}
+                      />
+                      <Text size="xs" style={{ color: 'var(--theme-text-secondary)' }}>
+                        Сохранение...
+                      </Text>
+                    </>
+                  ) : lastSaved ? (
+                    <>
+                      <IconCheck size={14} style={{ color: 'var(--theme-primary)' }} />
+                      <Text size="xs" style={{ color: 'var(--theme-text-secondary)' }}>
+                        Сохранено{' '}
+                        {lastSaved.toLocaleTimeString('ru-RU', {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </Text>
+                    </>
+                  ) : null}
+                </Group>
+              )}
+            </Group>
+
+            {/* Save button in header: non-floating, same row as "Закрыть" */}
+            <Button
+              onClick={onSave}
+              loading={isSaving}
+              disabled={!content.trim() || isSaving}
+              radius="md"
+              size={isMobile ? 'sm' : 'md'}
+              style={{
+                backgroundColor: 'var(--theme-primary)',
+                color: 'var(--theme-bg)',
+                fontWeight: 500,
+                border: '1px solid var(--theme-primary)',
+                transition: 'all 0.3s ease',
+                minHeight: '40px',
+                padding: isMobile ? '0 20px' : '0 28px',
+                boxShadow: '0 3px 10px rgba(0, 0, 0, 0.18)',
+              }}
+              onMouseEnter={(e) => {
+                if (!isSaving && content.trim()) {
+                  e.currentTarget.style.transform = 'scale(1.03)'
+                  e.currentTarget.style.boxShadow = '0 4px 14px rgba(0, 0, 0, 0.24)'
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!isSaving && content.trim()) {
+                  e.currentTarget.style.transform = 'scale(1)'
+                  e.currentTarget.style.boxShadow = '0 3px 10px rgba(0, 0, 0, 0.18)'
+                }
+              }}
+            >
+              {buttonText}
+            </Button>
           </Group>
 
           {/* Title input */}
@@ -417,60 +459,6 @@ export const NewEntryEditor = forwardRef<NewEntryEditorHandle, NewEntryEditorPro
           )}
 
         </Stack>
-      </Box>
-
-      {/* Floating Save Button - All screen sizes */}
-      <Box
-        style={{
-          position: 'fixed',
-          bottom: isMobile ? '24px' : '32px',
-          right: isMobile ? '50%' : '32px',
-          transform: isMobile ? 'translateX(50%)' : 'none',
-          zIndex: 1000,
-        }}
-      >
-        <Button
-          onClick={onSave}
-          loading={isSaving}
-          disabled={!content.trim() || isSaving}
-          radius="xl"
-          size={isMobile ? 'lg' : 'md'}
-          style={{
-            backgroundColor: 'var(--theme-primary)',
-            color: 'var(--theme-bg)',
-            fontWeight: 500,
-            border: '1px solid var(--theme-primary)',
-            transition: 'all 0.3s ease',
-            minHeight: isMobile ? '56px' : '48px',
-            minWidth: isMobile ? '120px' : '140px',
-            boxShadow: '0 4px 16px rgba(0, 0, 0, 0.2)',
-            padding: isMobile ? '0 32px' : '0 40px',
-          }}
-          onMouseEnter={(e) => {
-            if (!isSaving && content.trim()) {
-              e.currentTarget.style.transform = 'scale(1.05)'
-              e.currentTarget.style.boxShadow = '0 6px 20px rgba(0, 0, 0, 0.25)'
-            }
-          }}
-          onMouseLeave={(e) => {
-            if (!isSaving && content.trim()) {
-              e.currentTarget.style.transform = 'scale(1)'
-              e.currentTarget.style.boxShadow = '0 4px 16px rgba(0, 0, 0, 0.2)'
-            }
-          }}
-          onTouchStart={(e) => {
-            if (!isSaving && content.trim()) {
-              e.currentTarget.style.transform = 'scale(0.95)'
-            }
-          }}
-          onTouchEnd={(e) => {
-            if (!isSaving && content.trim()) {
-              e.currentTarget.style.transform = 'scale(1)'
-            }
-          }}
-        >
-          {buttonText}
-        </Button>
       </Box>
       </>
     )

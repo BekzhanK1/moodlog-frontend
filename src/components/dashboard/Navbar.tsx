@@ -1,8 +1,9 @@
-import { Box, Group, Text, ActionIcon, Avatar, Menu } from '@mantine/core'
+import { Box, Group, Text, ActionIcon, Avatar, Menu, Image } from '@mantine/core'
 import { useMediaQuery } from '@mantine/hooks'
 import { IconSettings, IconMenu2, IconUser, IconLogout, IconBook, IconUpload, IconMicrophone } from '@tabler/icons-react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
+import { useTheme } from '../../contexts/ThemeContext'
 import { useState } from 'react'
 import { TelegramImport } from './TelegramImport'
 
@@ -18,6 +19,9 @@ export function Navbar({ userPicture, onMenuClick, onImportComplete, onAudioReco
   const { logout, user } = useAuth()
   const navigate = useNavigate()
   const [telegramImportOpened, setTelegramImportOpened] = useState(false)
+  const { currentTheme } = useTheme()
+
+  const logoSrc = currentTheme === 'light' ? '/moodlog-logo-black.png' : '/moodlog-logo-white.png'
 
   return (
     <Box
@@ -60,25 +64,16 @@ export function Navbar({ userPicture, onMenuClick, onImportComplete, onAudioReco
               <IconMenu2 size={22} />
             </ActionIcon>
           )}
-          <Text
-            onClick={() => navigate('/dashboard')}
-            style={{
-              fontSize: isMobile ? '18px' : '22px',
-              fontWeight: 500,
-              letterSpacing: isMobile ? '1px' : '2px',
-              color: 'var(--theme-text)',
-              cursor: 'pointer',
-              transition: 'opacity 0.2s ease',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.opacity = '0.7'
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.opacity = '1'
-            }}
-          >
-            MoodLog
-          </Text>
+          <Group gap={isMobile ? 6 : 10} align="center" style={{ cursor: 'pointer' }} onClick={() => navigate('/dashboard')}>
+            <Image
+              src={logoSrc}
+              alt="MoodLog"
+              h={isMobile ? 22 : 26}
+              mah={isMobile ? 22 : 26}
+              fit="contain"
+              style={{ display: 'block' }}
+            />
+          </Group>
         </Group>
 
         <Group gap={isMobile ? 'xs' : 'sm'} align="center">

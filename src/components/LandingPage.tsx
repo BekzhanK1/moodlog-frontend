@@ -10,20 +10,13 @@ import {
   ThemeIcon,
   Box,
   Transition,
+  Image,
 } from '@mantine/core'
 import { useIntersection, useMediaQuery } from '@mantine/hooks'
 import { useEffect, useState, useRef } from 'react'
-import {
-  IconBrain,
-  IconLock,
-  IconChartLine,
-  IconSparkles,
-  IconTrendingUp,
-  IconFileText,
-} from '@tabler/icons-react'
+import { IconBrain, IconLock, IconChartLine, IconSparkles, IconTrendingUp, IconFileText } from '@tabler/icons-react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { MoodBackground } from './EmotionWordsAnimation'
 
 interface FeatureCardProps {
   icon: React.ComponentType<{ size?: number | string; style?: React.CSSProperties }>
@@ -154,6 +147,60 @@ function LandingPage() {
         position: 'relative',
       }}
     >
+      {/* Navbar */}
+      <Box
+        component="header"
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          zIndex: 10,
+          borderBottom: '1px solid #eee',
+          backgroundColor: 'rgba(255, 255, 255, 0.92)',
+          backdropFilter: 'blur(8px)',
+          padding: isMobile ? '10px 12px' : '12px 20px',
+        }}
+      >
+        <Group justify="space-between" align="center">
+          <Group gap="xs" align="center">
+            <Image
+              src="/moodlog-logo-black.png"
+              alt="MoodLog"
+              h={28}
+              mah={28}
+              fit="contain"
+              style={{ display: 'block' }}
+            />
+          </Group>
+          <Button
+            onClick={handleLoginClick}
+            size={isMobile ? 'sm' : 'md'}
+            radius="md"
+            variant="filled"
+            style={{
+              backgroundColor: '#000',
+              color: '#fff',
+              border: '1px solid #000',
+              fontWeight: 500,
+              letterSpacing: '0.5px',
+              fontSize: isMobile ? '13px' : '14px',
+              padding: isMobile ? '8px 18px' : '10px 22px',
+            }}
+            className="button-smooth"
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = '#fff'
+              e.currentTarget.style.color = '#000'
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = '#000'
+              e.currentTarget.style.color = '#fff'
+            }}
+          >
+            Войти
+          </Button>
+        </Group>
+      </Box>
       {/* Hero Section */}
       <Box
         ref={heroRef}
@@ -164,11 +211,9 @@ function LandingPage() {
           justifyContent: 'center',
           position: 'relative',
           overflow: 'hidden',
-          padding: isMobile ? '40px 20px' : isTablet ? '60px 40px' : '80px 40px',
+          padding: isMobile ? '80px 20px 40px' : isTablet ? '100px 40px 60px' : '120px 40px 80px',
         }}
       >
-        {/* Emotion Words Animation */}
-        {mounted && <MoodBackground />}
         {/* Animated background gradient */}
         <Box
           style={{
@@ -295,50 +340,27 @@ function LandingPage() {
           <Stack align="center" gap={isMobile ? 'lg' : 'xl'} ta="center">
             <Transition
               mounted={mounted}
-              transition="fade"
-              duration={1500}
-              timingFunction="cubic-bezier(0.16, 1, 0.3, 1)"
-            >
-              {(styles) => (
-                <Title
-                  order={1}
-                  size={isMobile ? 48 : isTablet ? 64 : 90}
-                  fw={200}
-                  style={{
-                    ...styles,
-                    letterSpacing: isMobile ? '6px' : isTablet ? '8px' : '12px',
-                    textTransform: 'uppercase',
-                    color: '#000',
-                    fontFamily: 'system-ui, -apple-system, sans-serif',
-                  }}
-                >
-                  MoodLog
-                </Title>
-              )}
-            </Transition>
-
-            <Transition
-              mounted={mounted}
               transition="slide-up"
               duration={1600}
               timingFunction="cubic-bezier(0.16, 1, 0.3, 1)"
             >
               {(styles) => (
-                <Text
-                  size="xl"
+                <Title
+                  order={1}
                   style={{
                     ...styles,
-                    color: '#333',
-                    maxWidth: isMobile ? '100%' : '700px',
-                    fontWeight: 400,
-                    letterSpacing: '0.5px',
-                    fontSize: isMobile ? '20px' : isTablet ? '24px' : '28px',
-                    lineHeight: 1.4,
+                    color: '#111',
+                    maxWidth: isMobile ? '100%' : '760px',
+                    fontWeight: 500,
+                    letterSpacing: '0.4px',
+                    fontSize: isMobile ? '28px' : isTablet ? '34px' : '40px',
+                    lineHeight: 1.2,
                     padding: isMobile ? '0 8px' : '0',
+                    textAlign: 'center',
                   }}
                 >
                   Что если ваш дневник мог бы читать между строк?
-                </Text>
+                </Title>
               )}
             </Transition>
 
@@ -350,14 +372,13 @@ function LandingPage() {
             >
               {(styles) => (
                 <Text
-                  size="lg"
                   style={{
                     ...styles,
                     color: '#555',
                     maxWidth: isMobile ? '100%' : '650px',
                     fontWeight: 300,
-                    lineHeight: 1.8,
-                    fontSize: isMobile ? '16px' : isTablet ? '17px' : '18px',
+                    lineHeight: 1.7,
+                    fontSize: isMobile ? '18px' : isTablet ? '19px' : '20px',
                     marginTop: '20px',
                     padding: isMobile ? '0 8px' : '0',
                   }}
@@ -380,7 +401,7 @@ function LandingPage() {
                     component={Link}
                     to="/register"
                     size={isMobile ? 'md' : 'lg'}
-                    radius={0}
+                    radius="md"
                     variant="filled"
                     fullWidth={isMobile}
                     style={{
@@ -406,34 +427,6 @@ function LandingPage() {
                     }}
                   >
                     Попробовать бесплатно →
-                  </Button>
-                  <Button
-                    onClick={handleLoginClick}
-                    size={isMobile ? 'md' : 'lg'}
-                    radius={0}
-                    variant="outline"
-                    fullWidth={isMobile}
-                    style={{
-                      borderColor: '#000',
-                      color: '#000',
-                      backgroundColor: 'transparent',
-                      fontWeight: 400,
-                      letterSpacing: '1px',
-                      padding: isMobile ? '12px 28px' : '12px 32px',
-                      fontSize: isMobile ? '14px' : '16px',
-                      textDecoration: 'none',
-                    }}
-                    className="button-smooth"
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = '#000'
-                      e.currentTarget.style.color = '#fff'
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = 'transparent'
-                      e.currentTarget.style.color = '#000'
-                    }}
-                  >
-                    Войти →
                   </Button>
                 </Group>
               )}

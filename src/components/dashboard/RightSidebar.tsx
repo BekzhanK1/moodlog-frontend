@@ -30,18 +30,19 @@ interface RightSidebarProps {
   questionsLoading?: boolean
   onRefreshQuestions?: () => Promise<{ success: boolean; message?: string }>
   canRefreshQuestions?: () => { allowed: boolean; remaining: number; resetTime: number | null }
+  onCollapseChange?: (collapsed: boolean) => void
 }
 
-export function RightSidebar({ 
-  entry, 
-  wordCount, 
-  isNewEntry, 
-  onTagClick, 
-  searchQuery, 
-  writingQuestions = [], 
+export function RightSidebar({
+  entry,
+  wordCount,
+  isNewEntry,
+  onTagClick,
+  searchQuery,
+  writingQuestions = [],
   questionsLoading = false,
   onRefreshQuestions,
-  canRefreshQuestions
+  canRefreshQuestions,
 }: RightSidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [weather, setWeather] = useState<WeatherData | null>(null)
@@ -559,7 +560,9 @@ export function RightSidebar({
           zIndex: 100,
           transition: 'left 0.3s ease',
         }}
-        onClick={() => setIsCollapsed(!isCollapsed)}
+        onClick={() => {
+          setIsCollapsed(!isCollapsed)
+        }}
       >
         <Box
           style={{

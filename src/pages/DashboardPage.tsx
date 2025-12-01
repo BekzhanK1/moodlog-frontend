@@ -610,7 +610,7 @@ export function DashboardPage() {
   return (
     <Box
       style={{
-        minHeight: '100vh',
+        height: '100vh',
         backgroundColor: 'var(--theme-bg)',
         display: 'flex',
         flexDirection: 'column',
