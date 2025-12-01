@@ -1,4 +1,5 @@
 import { MantineProvider } from '@mantine/core'
+import { Notifications } from '@mantine/notifications'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import LandingPage from './components/LandingPage'
 import { LoginPage } from './pages/LoginPage'
@@ -9,7 +10,10 @@ import { SettingsPage } from './pages/SettingsPage'
 import { ProfilePage } from './pages/ProfilePage'
 import { AnalyticsPage } from './pages/AnalyticsPage'
 import { TutorialPage } from './pages/TutorialPage'
+import { AdminPromoCodesPage } from './pages/AdminPromoCodesPage'
+import { AdminDashboardPage } from './pages/AdminDashboardPage'
 import { AuthProvider } from './contexts/AuthContext'
+import { SubscriptionProvider } from './contexts/SubscriptionContext'
 import { ThemeProvider, useTheme } from './contexts/ThemeContext'
 import { WeatherEffectComponent } from './components/WeatherEffect'
 import { getWeatherEffect } from './utils/weatherEffects'
@@ -52,21 +56,26 @@ function AppContent() {
 
   return (
     <MantineProvider theme={mantineTheme}>
+      <Notifications position="top-right" />
       <BrowserRouter>
         <AuthProvider>
-          <WeatherEffectComponent effect={weatherEffect} />
-          <Routes>
+          <SubscriptionProvider>
+            <WeatherEffectComponent effect={weatherEffect} />
+            <Routes>
             <Route path="/" element={<LandingPage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/auth/callback" element={<AuthCallbackPage />} />
             <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
             <Route path="/analytics" element={<AnalyticsPage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/tutorial" element={<TutorialPage />} />
+            <Route path="/admin/promo-codes" element={<AdminPromoCodesPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
+          </SubscriptionProvider>
         </AuthProvider>
       </BrowserRouter>
     </MantineProvider>

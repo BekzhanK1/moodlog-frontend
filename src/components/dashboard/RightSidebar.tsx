@@ -29,7 +29,7 @@ interface RightSidebarProps {
   writingQuestions?: string[]
   questionsLoading?: boolean
   onRefreshQuestions?: () => Promise<{ success: boolean; message?: string }>
-  canRefreshQuestions?: () => { allowed: boolean; remaining: number; resetTime: number | null }
+  canRefreshQuestions?: () => { allowed: boolean; remaining: number; resetTime: number | null; isUnlimited?: boolean; maxSkips?: number }
   onCollapseChange?: (collapsed: boolean) => void
 }
 
@@ -49,22 +49,29 @@ export function RightSidebar({
   const [weatherLoading, setWeatherLoading] = useState(false)
   const [weatherError, setWeatherError] = useState<string | null>(null)
   const [refreshingQuestions, setRefreshingQuestions] = useState(false)
-  const [rateLimitInfo, setRateLimitInfo] = useState<{ allowed: boolean; remaining: number; resetTime: number | null } | null>(null)
+  const [rateLimitInfo, setRateLimitInfo] = useState<{ allowed: boolean; remaining: number; resetTime: number | null; isUnlimited?: boolean; maxSkips?: number } | null>(null)
   const [completedQuestions, setCompletedQuestions] = useState<Set<string>>(new Set())
 
   const COMPLETED_STORAGE_KEY = 'moodlog_ai_questions_completed_new_entry'
   const questionsKey = writingQuestions.join('|')
   const prevQuestionsKeyRef = useRef<string | null>(null)
 
-  // Update rate limit info periodically
+  // Update rate limit info periodically (only when needed)
   useEffect(() => {
     if (canRefreshQuestions && isNewEntry) {
       const updateRateLimit = () => {
-        setRateLimitInfo(canRefreshQuestions())
+        const info = canRefreshQuestions()
+        setRateLimitInfo(info)
+        return info
       }
       
+      // Initial update
       updateRateLimit()
-      const interval = setInterval(updateRateLimit, 1000) // Update every second for countdown
+      
+      // Update every second for countdown
+      const interval = setInterval(() => {
+        updateRateLimit()
+      }, 1000)
       
       return () => clearInterval(interval)
     }
@@ -124,14 +131,21 @@ export function RightSidebar({
   }
 
   const handleRefreshQuestions = async () => {
-    if (!onRefreshQuestions || !rateLimitInfo?.allowed || refreshingQuestions) return
+    if (!onRefreshQuestions || !rateLimitInfo?.allowed || refreshingQuestions) {
+      // Show error message if not allowed
+      if (rateLimitInfo && !rateLimitInfo.allowed) {
+        // Could show a notification here if needed
+        console.log('Reset not available')
+      }
+      return
+    }
 
     setRefreshingQuestions(true)
     try {
       const result = await onRefreshQuestions()
       if (!result.success && result.message) {
         // Could show a notification here if needed
-        console.log(result.message)
+        console.log('Refresh failed:', result.message)
       }
       // Update rate limit info after refresh
       if (canRefreshQuestions) {
@@ -150,10 +164,14 @@ export function RightSidebar({
     const diff = resetTime - now
     if (diff <= 0) return ''
     
-    const minutes = Math.floor(diff / 60000)
-    const seconds = Math.floor((diff % 60000) / 1000)
+    const totalSeconds = Math.floor(diff / 1000)
+    const hours = Math.floor(totalSeconds / 3600)
+    const minutes = Math.floor((totalSeconds % 3600) / 60)
+    const seconds = totalSeconds % 60
     
-    if (minutes > 0) {
+    if (hours > 0) {
+      return `${hours}ч ${minutes}м ${seconds}с`
+    } else if (minutes > 0) {
       return `${minutes}м ${seconds}с`
     }
     return `${seconds}с`
@@ -381,7 +399,7 @@ export function RightSidebar({
                       }}
                     >
                       {rateLimitInfo.remaining > 0 ? (
-                        `Осталось: ${rateLimitInfo.remaining}`
+                        `Осталось: ${rateLimitInfo.remaining}/${rateLimitInfo.maxSkips || 1}`
                       ) : rateLimitInfo.resetTime ? (
                         `Через: ${getTimeUntilReset(rateLimitInfo.resetTime)}`
                       ) : null}

@@ -7,7 +7,7 @@ import { TokenResponse } from '../utils/api'
 
 export function AuthCallbackPage() {
   const navigate = useNavigate()
-  const { setTokens } = useAuth()
+  const { setTokens, user } = useAuth()
   const [searchParams] = useSearchParams()
 
   useEffect(() => {
@@ -39,7 +39,10 @@ export function AuthCallbackPage() {
           setTokens(tokens)
           // Clear the hash from URL
           window.history.replaceState(null, '', window.location.pathname)
-          navigate('/dashboard')
+          // Wait a bit for user data to load, then redirect
+          setTimeout(() => {
+            // This will be handled by the redirect logic in useEffect below
+          }, 100)
         }
       } catch (err) {
         // Error will be handled by UI below
@@ -51,6 +54,17 @@ export function AuthCallbackPage() {
 
     handleCallback()
   }, [navigate, setTokens, searchParams])
+
+  // Redirect based on user role after tokens are set
+  useEffect(() => {
+    if (user) {
+      if (user.is_admin) {
+        navigate('/admin/dashboard')
+      } else {
+        navigate('/dashboard')
+      }
+    }
+  }, [user, navigate])
 
   const error = searchParams.get('error')
 

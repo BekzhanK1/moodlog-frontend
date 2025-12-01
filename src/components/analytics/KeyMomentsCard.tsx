@@ -152,6 +152,7 @@ export function KeyMomentsCard() {
           border: '1px solid var(--theme-border)',
           transition: 'all 0.3s ease',
           boxShadow: '0 2px 8px rgba(0, 0, 0, 0.05)',
+          minHeight: '200px',
         }}
         onMouseEnter={(e) => {
           e.currentTarget.style.boxShadow = '0 4px 16px rgba(0, 0, 0, 0.1)'
@@ -212,9 +213,11 @@ export function KeyMomentsCard() {
               </Button>
             </Group>
           </Group>
-          <Text style={{ color: 'var(--theme-text-secondary)', fontSize: isMobile ? '14px' : '16px' }}>
-            Нет данных за этот период
-          </Text>
+          <Box style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '120px' }}>
+            <Text style={{ color: 'var(--theme-text-secondary)', fontSize: isMobile ? '14px' : '16px' }}>
+              Нет данных за этот период
+            </Text>
+          </Box>
         </Stack>
       </Card>
     )

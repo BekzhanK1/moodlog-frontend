@@ -386,6 +386,7 @@ export function Sidebar({
                 <Button
                   leftSection={<IconPlus size={18} />}
                   onClick={handleNewEntry}
+                  radius="md"
                   style={{
                     backgroundColor: 'var(--theme-primary)',
                     color: 'var(--theme-bg)',

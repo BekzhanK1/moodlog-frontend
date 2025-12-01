@@ -1,5 +1,5 @@
 import { useForm } from '@mantine/form'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
   TextInput,
@@ -21,7 +21,7 @@ import { API_BASE_URL } from '../utils/api'
 
 export function RegisterPage() {
   const navigate = useNavigate()
-  const { register } = useAuth()
+  const { register, user } = useAuth()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -40,13 +40,24 @@ export function RegisterPage() {
 
     try {
       await register(values.email, values.password)
-      navigate('/dashboard')
+      // Navigation will be handled by useEffect below based on user role
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Произошла ошибка при регистрации')
-    } finally {
       setLoading(false)
     }
   }
+
+  // Redirect based on user role after registration
+  useEffect(() => {
+    if (user) {
+      if (user.is_admin) {
+        navigate('/admin/dashboard')
+      } else {
+        navigate('/dashboard')
+      }
+      setLoading(false)
+    }
+  }, [user, navigate])
 
   const handleGoogleRegister = () => {
     setError(null)

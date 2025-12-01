@@ -8,6 +8,7 @@ interface UserInfo {
   created_at: string
   picture?: string | null
   name?: string | null
+  is_admin?: boolean
 }
 
 interface AuthContextType {

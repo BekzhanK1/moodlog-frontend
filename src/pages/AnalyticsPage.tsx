@@ -23,7 +23,12 @@ export function AnalyticsPage() {
       navigate('/login')
       return
     }
-  }, [isAuthenticated, authLoading, navigate])
+    // Redirect admins to admin dashboard
+    if (!authLoading && isAuthenticated && user?.is_admin) {
+      navigate('/admin/dashboard')
+      return
+    }
+  }, [isAuthenticated, authLoading, navigate, user])
 
   if (authLoading) {
     return (

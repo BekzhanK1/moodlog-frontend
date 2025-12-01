@@ -1,8 +1,10 @@
-import { Card, Text, Stack, Group, Box, Progress, ActionIcon, Button } from '@mantine/core'
+import { Card, Text, Stack, Group, Box, Progress, ActionIcon, Button, Badge, Overlay } from '@mantine/core'
 import { useMediaQuery } from '@mantine/hooks'
-import { IconBulb, IconChevronLeft, IconChevronRight, IconCalendar } from '@tabler/icons-react'
+import { IconBulb, IconChevronLeft, IconChevronRight, IconCalendar, IconCrown, IconLock } from '@tabler/icons-react'
 import { useEffect, useState } from 'react'
 import { apiClient } from '../../utils/api'
+import { useSubscription } from '../../contexts/SubscriptionContext'
+import { SubscriptionMenu } from '../subscription/SubscriptionMenu'
 
 const monthNames = [
   'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
@@ -17,8 +19,11 @@ interface Theme {
 
 export function ThemesCard() {
   const isMobile = useMediaQuery('(max-width: 768px)')
+  const { canUseFeature } = useSubscription()
   const [themes, setThemes] = useState<Theme[]>([])
   const [loading, setLoading] = useState(true)
+  const [subscriptionMenuOpened, setSubscriptionMenuOpened] = useState(false)
+  const hasAccess = canUseFeature('has_themes')
   
   // Состояние для текущего месяца
   const now = new Date()
@@ -26,6 +31,10 @@ export function ThemesCard() {
   const [currentMonth, setCurrentMonth] = useState(now.getMonth() + 1)
 
   useEffect(() => {
+    if (!hasAccess) {
+      setLoading(false)
+      return
+    }
     const fetchData = async () => {
       setLoading(true)
       try {
@@ -41,7 +50,7 @@ export function ThemesCard() {
       }
     }
     fetchData()
-  }, [currentYear, currentMonth])
+  }, [currentYear, currentMonth, hasAccess])
 
   const handlePrevious = () => {
     if (currentMonth > 1) {
@@ -106,27 +115,59 @@ export function ThemesCard() {
         border: '1px solid var(--theme-border)',
         transition: 'all 0.3s ease',
         boxShadow: '0 2px 8px rgba(0, 0, 0, 0.05)',
+        position: 'relative',
+        minHeight: '200px',
       }}
       onMouseEnter={(e) => {
-        e.currentTarget.style.boxShadow = '0 4px 16px rgba(0, 0, 0, 0.1)'
-        e.currentTarget.style.transform = 'translateY(-2px)'
+        if (hasAccess) {
+          e.currentTarget.style.boxShadow = '0 4px 16px rgba(0, 0, 0, 0.1)'
+          e.currentTarget.style.transform = 'translateY(-2px)'
+        }
       }}
       onMouseLeave={(e) => {
-        e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.05)'
-        e.currentTarget.style.transform = 'translateY(0)'
+        if (hasAccess) {
+          e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.05)'
+          e.currentTarget.style.transform = 'translateY(0)'
+        }
       }}
     >
-      <Stack gap="md">
+      {!hasAccess && (
+        <Badge
+          color="yellow"
+          variant="light"
+          size="sm"
+          leftSection={<IconCrown size={12} />}
+          style={{
+            position: 'absolute',
+            top: '12px',
+            right: '12px',
+            zIndex: 10,
+          }}
+        >
+          Pro
+        </Badge>
+      )}
+      <Stack 
+        gap="md" 
+        style={{ 
+          position: 'relative',
+          filter: !hasAccess ? 'blur(2px)' : 'none',
+          opacity: !hasAccess ? 0.7 : 1,
+          pointerEvents: !hasAccess ? 'none' : 'auto',
+        }}
+      >
         <Group justify="space-between" align="center" wrap="wrap">
-          <Text
-            style={{
-              fontSize: isMobile ? '18px' : '20px',
-              fontWeight: 600,
-              color: 'var(--theme-text)',
-            }}
-          >
-            Темы и триггеры
-          </Text>
+          <Group gap="xs">
+            <Text
+              style={{
+                fontSize: isMobile ? '18px' : '20px',
+                fontWeight: 600,
+                color: 'var(--theme-text)',
+              }}
+            >
+              Темы и триггеры
+            </Text>
+          </Group>
           <Group gap="xs" wrap="nowrap">
             <ActionIcon
               variant="subtle"
@@ -168,9 +209,11 @@ export function ThemesCard() {
         </Group>
 
         {themes.length === 0 ? (
-          <Text style={{ color: 'var(--theme-text-secondary)', fontSize: isMobile ? '14px' : '16px' }}>
-            Недостаточно данных для анализа тем
-          </Text>
+          <Box style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '120px' }}>
+            <Text style={{ color: 'var(--theme-text-secondary)', fontSize: isMobile ? '14px' : '16px' }}>
+              Недостаточно данных для анализа тем
+            </Text>
+          </Box>
         ) : (
           <>
             <Text
@@ -258,6 +301,57 @@ export function ThemesCard() {
           </>
         )}
       </Stack>
+      {!hasAccess && (
+        <Overlay
+          color="var(--theme-bg)"
+          opacity={0.85}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderRadius: '12px',
+            backdropFilter: 'blur(10px)',
+            WebkitBackdropFilter: 'blur(10px)',
+            backgroundColor: 'rgba(var(--theme-bg-rgb, 255, 255, 255), 0.8)',
+          }}
+        >
+          <Box 
+            style={{ 
+              textAlign: 'center', 
+              padding: '24px', 
+              maxWidth: '300px',
+              backgroundColor: 'rgba(255, 255, 255, 0.1)',
+              backdropFilter: 'blur(8px)',
+              WebkitBackdropFilter: 'blur(8px)',
+              borderRadius: '12px',
+              border: '1px solid rgba(255, 255, 255, 0.2)',
+            }}
+          >
+            <IconLock size={32} style={{ color: 'var(--theme-text-secondary)', marginBottom: '16px' }} />
+            <Text fw={600} mb="md" size="lg">
+              Требуется Pro подписка
+            </Text>
+            <Button
+              leftSection={<IconCrown size={16} />}
+              onClick={() => setSubscriptionMenuOpened(true)}
+              radius="md"
+              size="md"
+              style={{
+                backgroundColor: '#fbbf24',
+                color: '#000',
+                fontWeight: 600,
+              }}
+            >
+              Перейти на Pro
+            </Button>
+          </Box>
+        </Overlay>
+      )}
+      <SubscriptionMenu
+        opened={subscriptionMenuOpened}
+        onClose={() => setSubscriptionMenuOpened(false)}
+        initialTab="upgrade"
+      />
     </Card>
   )
 }

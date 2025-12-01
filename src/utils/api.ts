@@ -62,6 +62,104 @@ export interface UserCharacteristicResponse {
   writing_style?: WritingStyle | null
 }
 
+// Subscription types
+export interface PlanResponse {
+  id: string
+  name: string
+  price_monthly: number
+  price_yearly: number
+  duration_days: number | null
+  features: {
+    ai_questions_per_day: number | null
+    has_themes: boolean
+    has_weekly_insights: boolean
+    has_monthly_insights: boolean
+    has_voice_recording: boolean
+    has_visual_themes: boolean
+    has_visual_effects: boolean
+  }
+}
+
+export interface PlansListResponse {
+  plans: PlanResponse[]
+}
+
+export interface SubscriptionResponse {
+  plan: string
+  plan_name: string
+  status: string
+  started_at: string | null
+  expires_at: string | null
+  trial_used: boolean
+  features: {
+    ai_questions_per_day: number | null
+    has_themes: boolean
+    has_weekly_insights: boolean
+    has_monthly_insights: boolean
+    has_voice_recording: boolean
+    has_visual_themes: boolean
+    has_visual_effects: boolean
+  }
+  is_active: boolean
+}
+
+export interface SubscribeRequest {
+  plan: 'pro_month' | 'pro_year'
+}
+
+export interface SubscribeResponse {
+  payment_id: string
+  order_id: string
+  payment_url: string
+  amount: number
+}
+
+export interface PaymentStatusResponse {
+  payment_id: string
+  status: string
+  webkassa_status: string | null
+  order_id: string | null
+}
+
+export interface StartTrialResponse {
+  message: string
+  expires_at: string
+}
+
+// Promo code types
+export interface PromoCodeCreateRequest {
+  plan: 'pro_month' | 'pro_year'
+  code?: string
+  expires_at?: string
+}
+
+export interface PromoCodeResponse {
+  id: string
+  code: string
+  plan: string
+  created_by: string
+  used_by: string | null
+  used_at: string | null
+  is_used: boolean
+  created_at: string
+  expires_at: string | null
+}
+
+export interface PromoCodeListResponse {
+  promo_codes: PromoCodeResponse[]
+  total: number
+}
+
+export interface PromoCodeRedeemRequest {
+  code: string
+}
+
+export interface PromoCodeRedeemResponse {
+  message: string
+  plan: string
+  expires_at: string
+}
+
 export interface EntryCreateRequest {
   title?: string | null
   content: string
@@ -217,8 +315,8 @@ class ApiClient {
     })
   }
 
-  async getCurrentUser(): Promise<{ id: string; email: string; created_at: string; name?: string | null; picture?: string | null }> {
-    return this.request<{ id: string; email: string; created_at: string; name?: string | null; picture?: string | null }>('/auth/me')
+  async getCurrentUser(): Promise<{ id: string; email: string; created_at: string; name?: string | null; picture?: string | null; is_admin?: boolean }> {
+    return this.request<{ id: string; email: string; created_at: string; name?: string | null; picture?: string | null; is_admin?: boolean }>('/auth/me')
   }
 
   async refreshToken(refreshToken: string): Promise<TokenResponse> {
@@ -492,6 +590,54 @@ class ApiClient {
 
   async getUserCharacteristics(): Promise<UserCharacteristicResponse> {
     return this.request<UserCharacteristicResponse>('/auth/characteristics')
+  }
+
+  // Subscription endpoints
+  async getPlans(): Promise<PlansListResponse> {
+    return this.request<PlansListResponse>('/subscriptions/plans')
+  }
+
+  async getCurrentSubscription(): Promise<SubscriptionResponse> {
+    return this.request<SubscriptionResponse>('/subscriptions/current')
+  }
+
+  async startTrial(): Promise<StartTrialResponse> {
+    return this.request<StartTrialResponse>('/subscriptions/start-trial', {
+      method: 'POST',
+    })
+  }
+
+  async subscribe(request: SubscribeRequest): Promise<SubscribeResponse> {
+    return this.request<SubscribeResponse>('/subscriptions/subscribe', {
+      method: 'POST',
+      body: JSON.stringify(request),
+    })
+  }
+
+  async checkPaymentStatus(paymentId: string): Promise<PaymentStatusResponse> {
+    return this.request<PaymentStatusResponse>(`/subscriptions/payment/${paymentId}/status`)
+  }
+
+  // Promo code endpoints
+  async createPromoCode(request: PromoCodeCreateRequest): Promise<PromoCodeResponse> {
+    return this.request<PromoCodeResponse>('/admin/promo-codes', {
+      method: 'POST',
+      body: JSON.stringify(request),
+    })
+  }
+
+  async listPromoCodes(includeUsed: boolean = true, limit?: number): Promise<PromoCodeListResponse> {
+    const params = new URLSearchParams()
+    params.append('include_used', includeUsed.toString())
+    if (limit) params.append('limit', limit.toString())
+    return this.request<PromoCodeListResponse>(`/admin/promo-codes?${params.toString()}`)
+  }
+
+  async redeemPromoCode(request: PromoCodeRedeemRequest): Promise<PromoCodeRedeemResponse> {
+    return this.request<PromoCodeRedeemResponse>('/promo-codes/redeem', {
+      method: 'POST',
+      body: JSON.stringify(request),
+    })
   }
 }
 

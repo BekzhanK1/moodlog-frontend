@@ -1,8 +1,10 @@
 import { useState, useRef, useEffect } from 'react'
-import { Button, Group, Text, Box, Stack, Alert, Modal, Loader, Slider, ActionIcon } from '@mantine/core'
+import { Button, Group, Text, Box, Stack, Alert, Modal, Loader, Slider, ActionIcon, Overlay } from '@mantine/core'
 import { useMediaQuery } from '@mantine/hooks'
-import { IconMicrophone, IconPlayerStop, IconCheck, IconX, IconAlertCircle, IconRefresh, IconPlayerPlay, IconPlayerPause } from '@tabler/icons-react'
+import { IconMicrophone, IconPlayerStop, IconCheck, IconX, IconAlertCircle, IconRefresh, IconPlayerPlay, IconPlayerPause, IconCrown, IconLock } from '@tabler/icons-react'
 import { apiClient } from '../../utils/api'
+import { useSubscription } from '../../contexts/SubscriptionContext'
+import { SubscriptionMenu } from '../subscription/SubscriptionMenu'
 
 interface AudioRecorderProps {
   onRecordingComplete?: (entryId: string) => void
@@ -12,6 +14,9 @@ interface AudioRecorderProps {
 
 export function AudioRecorder({ onRecordingComplete, onClose, title }: AudioRecorderProps) {
   const isMobile = useMediaQuery('(max-width: 768px)')
+  const { canUseFeature } = useSubscription()
+  const hasAccess = canUseFeature('has_voice_recording')
+  const [subscriptionMenuOpened, setSubscriptionMenuOpened] = useState(false)
   const [isRecording, setIsRecording] = useState(false)
   const [recordingTime, setRecordingTime] = useState(0)
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null)
@@ -186,6 +191,11 @@ export function AudioRecorder({ onRecordingComplete, onClose, title }: AudioReco
   }, [isRecording])
 
   const startRecording = async () => {
+    if (!hasAccess) {
+      setSubscriptionMenuOpened(true)
+      return
+    }
+
     try {
       setError(null)
       
@@ -581,15 +591,98 @@ export function AudioRecorder({ onRecordingComplete, onClose, title }: AudioReco
             <Box
               style={{
                 textAlign: 'center',
-                padding: '40px 20px',
+                padding: '60px 20px',
                 border: '2px dashed var(--theme-border)',
                 borderRadius: '12px',
                 backgroundColor: 'var(--theme-hover)',
+                position: 'relative',
+                minHeight: '300px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
               }}
             >
-              {!isRecording ? (
+              {!hasAccess ? (
+                <Box style={{ position: 'relative', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Stack gap="md" align="center" style={{ filter: 'blur(2px)', opacity: 0.5, pointerEvents: 'none', position: 'absolute' }}>
+                    <IconMicrophone size={64} style={{ color: 'var(--theme-text-secondary)' }} />
+                    <Text size="sm" style={{ color: 'var(--theme-text-secondary)' }}>
+                      Нажмите кнопку ниже, чтобы начать запись
+                    </Text>
+                  </Stack>
+                  <Overlay
+                    color="var(--theme-bg)"
+                    opacity={0.92}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      borderRadius: '12px',
+                      backdropFilter: 'blur(12px)',
+                      WebkitBackdropFilter: 'blur(12px)',
+                    }}
+                  >
+                    <Stack gap="lg" align="center" style={{ padding: '40px 32px', maxWidth: '360px', width: '100%' }}>
+                      <Box
+                        style={{
+                          width: '80px',
+                          height: '80px',
+                          borderRadius: '50%',
+                          backgroundColor: 'rgba(253, 181, 0, 0.15)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          border: '2px solid rgba(253, 181, 0, 0.3)',
+                        }}
+                      >
+                        <IconLock size={40} style={{ color: '#FDB500' }} />
+                      </Box>
+                      <Stack gap="xs" align="center">
+                        <Text fw={700} size="xl" style={{ color: 'var(--theme-text)' }}>
+                          Требуется Pro подписка
+                        </Text>
+                        <Text size="sm" c="dimmed" ta="center" style={{ maxWidth: '300px', lineHeight: 1.6 }}>
+                          Голосовые записи доступны только в Pro плане
+                        </Text>
+                      </Stack>
+                      <Stack gap="md" style={{ width: '100%' }}>
+                        <Button
+                          leftSection={<IconCrown size={18} />}
+                          onClick={() => setSubscriptionMenuOpened(true)}
+                          radius="md"
+                          size="lg"
+                          style={{
+                            backgroundColor: '#FDB500',
+                            color: '#000',
+                            fontWeight: 600,
+                            width: '100%',
+                          }}
+                        >
+                          Перейти на Pro
+                        </Button>
+                        {onClose && (
+                          <Button
+                            variant="subtle"
+                            onClick={onClose}
+                            radius="md"
+                            size="lg"
+                            style={{
+                              color: 'var(--theme-text)',
+                              border: '1px solid var(--theme-border)',
+                              width: '100%',
+                              backgroundColor: 'transparent',
+                            }}
+                          >
+                            Закрыть
+                          </Button>
+                        )}
+                      </Stack>
+                    </Stack>
+                  </Overlay>
+                </Box>
+              ) : !isRecording ? (
                 <Stack gap="md" align="center">
-                  <IconMicrophone size={48} style={{ color: 'var(--theme-text-secondary)' }} />
+                  <IconMicrophone size={64} style={{ color: 'var(--theme-text-secondary)' }} />
                   <Text size="sm" style={{ color: 'var(--theme-text-secondary)' }}>
                     Нажмите кнопку ниже, чтобы начать запись
                   </Text>
@@ -663,50 +756,53 @@ export function AudioRecorder({ onRecordingComplete, onClose, title }: AudioReco
               )}
             </Box>
 
-            <Group justify="center" gap="md">
-              {!isRecording ? (
-                <Button
-                  leftSection={<IconMicrophone size={20} />}
-                  onClick={startRecording}
-                  size={isMobile ? 'md' : 'lg'}
-                  radius="xl"
-                  style={{
-                    backgroundColor: 'var(--theme-primary)',
-                    color: 'var(--theme-bg)',
-                    minWidth: '160px',
-                  }}
-                >
-                  Начать запись
-                </Button>
-              ) : (
-                <Button
-                  leftSection={<IconPlayerStop size={20} />}
-                  onClick={stopRecording}
-                  size={isMobile ? 'md' : 'lg'}
-                  radius="xl"
-                  color="red"
-                  style={{
-                    minWidth: '160px',
-                  }}
-                >
-                  Остановить
-                </Button>
-              )}
-              {onClose && (
-                <Button
-                  variant="subtle"
-                  onClick={handleCancel}
-                  size={isMobile ? 'md' : 'lg'}
-                  radius="xl"
-                  style={{
-                    color: 'var(--theme-text)',
-                    border: '1px solid var(--theme-border)',
-                  }}
-                >
-                  Отмена
-                </Button>
-              )}
-            </Group>
+            {hasAccess && (
+              <Group justify="center" gap="md">
+                {!isRecording ? (
+                  <Button
+                    leftSection={<IconMicrophone size={20} />}
+                    onClick={startRecording}
+                    size={isMobile ? 'md' : 'lg'}
+                    radius="md"
+                    style={{
+                      backgroundColor: 'var(--theme-primary)',
+                      color: 'var(--theme-bg)',
+                      minWidth: '160px',
+                      fontWeight: 600,
+                    }}
+                  >
+                    Начать запись
+                  </Button>
+                ) : (
+                  <Button
+                    leftSection={<IconPlayerStop size={20} />}
+                    onClick={stopRecording}
+                    size={isMobile ? 'md' : 'lg'}
+                    radius="xl"
+                    color="red"
+                    style={{
+                      minWidth: '160px',
+                    }}
+                  >
+                    Остановить
+                  </Button>
+                )}
+                {onClose && (
+                  <Button
+                    variant="subtle"
+                    onClick={handleCancel}
+                    size={isMobile ? 'md' : 'lg'}
+                    radius="xl"
+                    style={{
+                      color: 'var(--theme-text)',
+                      border: '1px solid var(--theme-border)',
+                    }}
+                  >
+                    Отмена
+                  </Button>
+                )}
+              </Group>
+            )}
           </>
         ) : (
           <>
@@ -1044,6 +1140,11 @@ export function AudioRecorder({ onRecordingComplete, onClose, title }: AudioReco
           }
         }
       `}</style>
+      <SubscriptionMenu
+        opened={subscriptionMenuOpened}
+        onClose={() => setSubscriptionMenuOpened(false)}
+        initialTab="upgrade"
+      />
     </Box>
   )
 }

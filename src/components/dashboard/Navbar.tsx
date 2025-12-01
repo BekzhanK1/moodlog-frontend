@@ -1,11 +1,13 @@
-import { Box, Group, Text, ActionIcon, Avatar, Menu, Image } from '@mantine/core'
+import { Box, Group, Text, ActionIcon, Avatar, Menu, Image, Badge, Button } from '@mantine/core'
 import { useMediaQuery } from '@mantine/hooks'
-import { IconSettings, IconMenu2, IconUser, IconLogout, IconBook, IconUpload, IconMicrophone } from '@tabler/icons-react'
+import { IconSettings, IconMenu2, IconUser, IconLogout, IconBook, IconUpload, IconMicrophone, IconCrown, IconSparkles, IconCreditCard, IconGift } from '@tabler/icons-react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
+import { useSubscription } from '../../contexts/SubscriptionContext'
 import { useTheme } from '../../contexts/ThemeContext'
 import { useState } from 'react'
 import { TelegramImport } from './TelegramImport'
+import { SubscriptionMenu } from '../subscription/SubscriptionMenu'
 
 interface NavbarProps {
   userPicture?: string | null
@@ -17,8 +19,11 @@ interface NavbarProps {
 export function Navbar({ userPicture, onMenuClick, onImportComplete, onAudioRecord }: NavbarProps) {
   const isMobile = useMediaQuery('(max-width: 768px)')
   const { logout, user } = useAuth()
+  const { subscription } = useSubscription()
   const navigate = useNavigate()
   const [telegramImportOpened, setTelegramImportOpened] = useState(false)
+  const [subscriptionMenuOpened, setSubscriptionMenuOpened] = useState(false)
+  const [subscriptionMenuTab, setSubscriptionMenuTab] = useState<'overview' | 'redeem' | 'upgrade'>('overview')
   const { currentTheme } = useTheme()
 
   const logoSrc = currentTheme === 'light' ? '/moodlog-logo-black.png' : '/moodlog-logo-white.png'
@@ -64,7 +69,7 @@ export function Navbar({ userPicture, onMenuClick, onImportComplete, onAudioReco
               <IconMenu2 size={22} />
             </ActionIcon>
           )}
-          <Group gap={isMobile ? 6 : 10} align="center" style={{ cursor: 'pointer' }} onClick={() => navigate('/dashboard')}>
+          <Group gap={isMobile ? 6 : 10} align="center" style={{ cursor: 'pointer' }} onClick={() => navigate(user?.is_admin ? '/admin/dashboard' : '/dashboard')}>
             <Image
               src={logoSrc}
               alt="MoodLog"
@@ -77,11 +82,52 @@ export function Navbar({ userPicture, onMenuClick, onImportComplete, onAudioReco
         </Group>
 
         <Group gap={isMobile ? 'xs' : 'sm'} align="center">
+          {/* Plan Badge / Upgrade Button */}
+          {!isMobile && (
+            <>
+              {subscription?.plan === 'free' && (
+                <Button
+                  size="xs"
+                  variant="light"
+                  color="yellow"
+                  leftSection={<IconCrown size={14} />}
+                  onClick={() => setSubscriptionMenuOpened(true)}
+                >
+                  Upgrade to Pro
+                </Button>
+              )}
+              {subscription?.plan === 'trial' && (
+                <Badge
+                  color="blue"
+                  variant="light"
+                  size="lg"
+                  leftSection={<IconSparkles size={12} />}
+                  style={{ cursor: 'pointer' }}
+                  onClick={() => setSubscriptionMenuOpened(true)}
+                >
+                  Trial
+                </Badge>
+              )}
+              {(subscription?.plan === 'pro_month' || subscription?.plan === 'pro_year') && (
+                <Badge
+                  color="yellow"
+                  variant="light"
+                  size="lg"
+                  leftSection={<IconCrown size={12} />}
+                  style={{ cursor: 'pointer' }}
+                  onClick={() => setSubscriptionMenuOpened(true)}
+                >
+                  Pro
+                </Badge>
+              )}
+            </>
+          )}
+
           {onAudioRecord && (
             <ActionIcon
               variant="light"
               radius="md"
-              size={isMobile ? 'lg' : 'md'}
+              size={isMobile ? 'xl' : 'lg'}
               onClick={onAudioRecord}
               styles={{
                 root: {
@@ -89,6 +135,7 @@ export function Navbar({ userPicture, onMenuClick, onImportComplete, onAudioReco
                   backgroundColor: 'var(--theme-hover)',
                   border: 'none',
                   transition: 'background-color 0.2s ease, color 0.2s ease',
+                  opacity: subscription?.features.has_voice_recording ? 1 : 0.8,
                   '&:hover': {
                     backgroundColor: 'var(--theme-primary)',
                     color: 'var(--theme-bg)',
@@ -99,9 +146,9 @@ export function Navbar({ userPicture, onMenuClick, onImportComplete, onAudioReco
                   },
                 },
               }}
-              title="Записать аудио"
+              title={subscription?.features.has_voice_recording ? "Записать аудио" : "Записать аудио (требуется Pro)"}
             >
-              <IconMicrophone size={isMobile ? 20 : 18} />
+              <IconMicrophone size={isMobile ? 22 : 20} />
             </ActionIcon>
           )}
           <ActionIcon
@@ -208,12 +255,51 @@ export function Navbar({ userPicture, onMenuClick, onImportComplete, onAudioReco
             <Menu.Dropdown>
               <Menu.Label>{user?.email}</Menu.Label>
               <Menu.Divider />
+              
+              {/* Subscription Section */}
+              <Menu.Label>Подписка</Menu.Label>
+              <Menu.Item
+                leftSection={<IconCreditCard size={16} />}
+                onClick={() => setSubscriptionMenuOpened(true)}
+              >
+                <Group justify="space-between" gap="xs">
+                  <Text>Управление подпиской</Text>
+                  {subscription?.plan === 'free' && (
+                    <Badge size="xs" color="gray">Free</Badge>
+                  )}
+                  {subscription?.plan === 'trial' && (
+                    <Badge size="xs" color="blue">Trial</Badge>
+                  )}
+                  {(subscription?.plan === 'pro_month' || subscription?.plan === 'pro_year') && (
+                    <Badge size="xs" color="yellow">Pro</Badge>
+                  )}
+                </Group>
+              </Menu.Item>
+              <Menu.Item
+                leftSection={<IconGift size={16} />}
+                onClick={() => {
+                  setSubscriptionMenuTab('redeem')
+                  setSubscriptionMenuOpened(true)
+                }}
+              >
+                Активировать промокод
+              </Menu.Item>
+              <Menu.Divider />
+              
               <Menu.Item
                 leftSection={<IconUser size={16} />}
                 onClick={() => navigate('/profile')}
               >
                 Профиль
               </Menu.Item>
+              {user?.is_admin && (
+                <Menu.Item
+                  leftSection={<IconCrown size={16} />}
+                  onClick={() => navigate('/admin/promo-codes')}
+                >
+                  Админ панель
+                </Menu.Item>
+              )}
               <Menu.Item
                 leftSection={<IconBook size={16} />}
                 onClick={() => navigate('/tutorial')}
@@ -267,6 +353,14 @@ export function Navbar({ userPicture, onMenuClick, onImportComplete, onAudioReco
         opened={telegramImportOpened}
         onClose={() => setTelegramImportOpened(false)}
         onImportComplete={onImportComplete}
+      />
+      <SubscriptionMenu
+        opened={subscriptionMenuOpened}
+        onClose={() => {
+          setSubscriptionMenuOpened(false)
+          setSubscriptionMenuTab('overview')
+        }}
+        initialTab={subscriptionMenuTab}
       />
     </Box>
   )

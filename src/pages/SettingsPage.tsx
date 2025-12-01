@@ -1,25 +1,50 @@
 import { Box, Container, Title, Stack, Group, Button, Text, Card, Divider, Select, Badge } from '@mantine/core'
 import { useMediaQuery } from '@mantine/hooks'
-import { IconArrowLeft, IconCheck, IconPalette, IconTypography, IconSnowflake, IconEye, IconSettings } from '@tabler/icons-react'
+import { IconArrowLeft, IconCheck, IconPalette, IconTypography, IconSnowflake, IconEye, IconSettings, IconCrown } from '@tabler/icons-react'
 import { useNavigate } from 'react-router-dom'
 import { useTheme, ThemeName, themes } from '../contexts/ThemeContext'
 import { getEditorFont, setEditorFont, fontOptions, FontFamily, getFontFamily } from '../utils/fonts'
 import { getWeatherEffect, setWeatherEffect, weatherEffectOptions, WeatherEffect } from '../utils/weatherEffects'
 import { useState, useEffect } from 'react'
+import { useSubscription } from '../contexts/SubscriptionContext'
+import { SubscriptionMenu } from '../components/subscription/SubscriptionMenu'
 
 export function SettingsPage() {
   const navigate = useNavigate()
   const { currentTheme, setTheme } = useTheme()
+  const { canUseFeature } = useSubscription()
+  const hasVisualThemesAccess = canUseFeature('has_visual_themes')
+  const hasVisualEffectsAccess = canUseFeature('has_visual_effects')
   const isMobile = useMediaQuery('(max-width: 768px)')
   const [selectedFont, setSelectedFont] = useState<FontFamily>(getEditorFont())
   const [selectedEffect, setSelectedEffect] = useState<WeatherEffect>(getWeatherEffect())
+  const [subscriptionMenuOpened, setSubscriptionMenuOpened] = useState(false)
 
   useEffect(() => {
     setSelectedFont(getEditorFont())
     setSelectedEffect(getWeatherEffect())
   }, [])
 
+  // Reset to basic theme/effect if user doesn't have access
+  useEffect(() => {
+    const basicThemes: ThemeName[] = ['light', 'dark']
+    if (!hasVisualThemesAccess && !basicThemes.includes(currentTheme)) {
+      setTheme('light')
+    }
+    if (!hasVisualEffectsAccess && selectedEffect !== 'none') {
+      setSelectedEffect('none')
+      setWeatherEffect('none')
+      window.dispatchEvent(new CustomEvent('weatherEffectChanged', { detail: 'none' }))
+    }
+  }, [hasVisualThemesAccess, hasVisualEffectsAccess, currentTheme, selectedEffect, setTheme])
+
   const handleThemeChange = (theme: ThemeName) => {
+    // Check if user has access to visual themes (non-basic themes)
+    const basicThemes: ThemeName[] = ['light', 'dark']
+    if (!basicThemes.includes(theme) && !hasVisualThemesAccess) {
+      setSubscriptionMenuOpened(true)
+      return
+    }
     setTheme(theme)
   }
 
@@ -29,11 +54,16 @@ export function SettingsPage() {
   }
 
   const handleEffectChange = (effect: WeatherEffect) => {
+    if (!hasVisualEffectsAccess && effect !== 'none') {
+      setSubscriptionMenuOpened(true)
+      return
+    }
     setSelectedEffect(effect)
     setWeatherEffect(effect)
     // Trigger a custom event to notify other components
     window.dispatchEvent(new CustomEvent('weatherEffectChanged', { detail: effect }))
   }
+
 
   return (
     <Box
@@ -119,17 +149,41 @@ export function SettingsPage() {
               border: '1px solid var(--theme-border)',
               transition: 'all 0.3s ease',
               boxShadow: '0 2px 8px rgba(0, 0, 0, 0.05)',
+              position: 'relative',
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.boxShadow = '0 4px 16px rgba(0, 0, 0, 0.1)'
-              e.currentTarget.style.transform = 'translateY(-2px)'
+              const basicThemes: ThemeName[] = ['light', 'dark']
+              if (hasVisualThemesAccess || basicThemes.includes(currentTheme)) {
+                e.currentTarget.style.boxShadow = '0 4px 16px rgba(0, 0, 0, 0.1)'
+                e.currentTarget.style.transform = 'translateY(-2px)'
+              }
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.05)'
               e.currentTarget.style.transform = 'translateY(0)'
             }}
           >
-            <Stack gap="lg">
+            {!hasVisualThemesAccess && (
+              <Badge
+                color="yellow"
+                variant="light"
+                size="sm"
+                leftSection={<IconCrown size={12} />}
+                style={{
+                  position: 'absolute',
+                  top: '16px',
+                  right: '16px',
+                  zIndex: 10,
+                  backgroundColor: 'rgba(253, 181, 0, 0.15)',
+                  backdropFilter: 'blur(10px)',
+                  WebkitBackdropFilter: 'blur(10px)',
+                  border: '1px solid rgba(253, 181, 0, 0.3)',
+                }}
+              >
+                Pro
+              </Badge>
+            )}
+            <Stack gap="lg" style={{ position: 'relative' }}>
               <Group gap="md" align="flex-start">
                 <Box
                   style={{
@@ -164,7 +218,9 @@ export function SettingsPage() {
                       lineHeight: 1.5,
                     }}
                   >
-                    Выберите цветовую схему для интерфейса
+                    {hasVisualThemesAccess 
+                      ? 'Выберите цветовую схему для интерфейса'
+                      : 'Базовые темы доступны бесплатно. Pro темы требуют подписки'}
                   </Text>
                 </Box>
               </Group>
@@ -172,14 +228,36 @@ export function SettingsPage() {
               <Select
                 value={currentTheme}
                 onChange={(value) => value && handleThemeChange(value as ThemeName)}
-                data={(Object.keys(themes) as ThemeName[]).map((themeName) => ({
-                  value: themeName,
-                  label: themes[themeName].displayName,
-                }))}
+                data={(Object.keys(themes) as ThemeName[]).map((themeName) => {
+                  const basicThemes: ThemeName[] = ['light', 'dark']
+                  const isProTheme = !basicThemes.includes(themeName)
+                  return {
+                    value: themeName,
+                    label: themes[themeName].displayName,
+                    disabled: isProTheme && !hasVisualThemesAccess,
+                  }
+                })}
                 renderOption={({ option, checked }) => {
                   const theme = themes[option.value as ThemeName]
+                  const basicThemes: ThemeName[] = ['light', 'dark']
+                  const isProTheme = !basicThemes.includes(option.value as ThemeName)
+                  const isDisabled = isProTheme && !hasVisualThemesAccess
                   return (
-                    <Group gap="sm" style={{ padding: '8px 4px' }}>
+                    <Group 
+                      gap="sm" 
+                      style={{ 
+                        padding: '8px 4px', 
+                        opacity: isDisabled ? 0.6 : 1,
+                        cursor: isDisabled ? 'not-allowed' : 'pointer',
+                      }}
+                      onClick={(e) => {
+                        if (isDisabled) {
+                          e.preventDefault()
+                          e.stopPropagation()
+                          setSubscriptionMenuOpened(true)
+                        }
+                      }}
+                    >
                       <Box
                         style={{
                           width: '16px',
@@ -189,9 +267,25 @@ export function SettingsPage() {
                           flexShrink: 0,
                         }}
                       />
-                      <Text style={{ flex: 1, color: 'var(--theme-text)' }}>
+                      <Text style={{ flex: 1, color: isDisabled ? 'var(--theme-text-secondary)' : 'var(--theme-text)' }}>
                         {option.label}
                       </Text>
+                      {isProTheme && (
+                        <Badge
+                          size="xs"
+                          variant="light"
+                          radius="sm"
+                          style={{
+                            color: '#FDB500',
+                            backgroundColor: 'rgba(253, 181, 0, 0.15)',
+                            backdropFilter: 'blur(10px)',
+                            WebkitBackdropFilter: 'blur(10px)',
+                            border: '1px solid rgba(253, 181, 0, 0.3)',
+                          }}
+                        >
+                          Pro
+                        </Badge>
+                      )}
                       {checked && (
                         <IconCheck size={16} style={{ color: 'var(--theme-primary)' }} />
                       )}
@@ -237,6 +331,13 @@ export function SettingsPage() {
                     },
                     '&[data-hovered]': {
                       backgroundColor: 'var(--theme-hover)',
+                    },
+                    '&[data-disabled]': {
+                      opacity: 0.6,
+                      cursor: 'not-allowed',
+                      '&:hover': {
+                        backgroundColor: 'var(--theme-surface)',
+                      },
                     },
                   },
                 }}
@@ -365,17 +466,40 @@ export function SettingsPage() {
               border: '1px solid var(--theme-border)',
               transition: 'all 0.3s ease',
               boxShadow: '0 2px 8px rgba(0, 0, 0, 0.05)',
+              position: 'relative',
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.boxShadow = '0 4px 16px rgba(0, 0, 0, 0.1)'
-              e.currentTarget.style.transform = 'translateY(-2px)'
+              if (hasVisualEffectsAccess || selectedEffect === 'none') {
+                e.currentTarget.style.boxShadow = '0 4px 16px rgba(0, 0, 0, 0.1)'
+                e.currentTarget.style.transform = 'translateY(-2px)'
+              }
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.05)'
               e.currentTarget.style.transform = 'translateY(0)'
             }}
           >
-            <Stack gap="lg">
+            {!hasVisualEffectsAccess && (
+              <Badge
+                color="yellow"
+                variant="light"
+                size="sm"
+                leftSection={<IconCrown size={12} />}
+                style={{
+                  position: 'absolute',
+                  top: '16px',
+                  right: '16px',
+                  zIndex: 10,
+                  backgroundColor: 'rgba(253, 181, 0, 0.15)',
+                  backdropFilter: 'blur(10px)',
+                  WebkitBackdropFilter: 'blur(10px)',
+                  border: '1px solid rgba(253, 181, 0, 0.3)',
+                }}
+              >
+                Pro
+              </Badge>
+            )}
+            <Stack gap="lg" style={{ position: 'relative' }}>
               <Group gap="md" align="flex-start">
                 <Box
                   style={{
@@ -402,7 +526,7 @@ export function SettingsPage() {
                     >
                       Атмосферные эффекты
                     </Text>
-                    {selectedEffect !== 'none' && (
+                    {selectedEffect !== 'none' && hasVisualEffectsAccess && (
                       <Badge
                         size="sm"
                         style={{
@@ -421,7 +545,9 @@ export function SettingsPage() {
                       lineHeight: 1.5,
                     }}
                   >
-                    Добавьте праздничное настроение с помощью эффектов
+                    {hasVisualEffectsAccess 
+                      ? 'Добавьте праздничное настроение с помощью эффектов'
+                      : 'Визуальные эффекты доступны только в Pro плане'}
                   </Text>
                 </Box>
               </Group>
@@ -432,7 +558,62 @@ export function SettingsPage() {
                 data={weatherEffectOptions.map(option => ({
                   value: option.value,
                   label: option.label,
+                  disabled: !hasVisualEffectsAccess && option.value !== 'none',
                 }))}
+                renderOption={({ option, checked }) => {
+                  const isProEffect = option.value !== 'none'
+                  const isDisabled = isProEffect && !hasVisualEffectsAccess
+                  return (
+                    <Group 
+                      gap="sm" 
+                      style={{ 
+                        padding: '8px 4px',
+                        opacity: isDisabled ? 0.6 : 1,
+                        cursor: isDisabled ? 'not-allowed' : 'pointer',
+                      }}
+                      onClick={(e) => {
+                        if (isDisabled) {
+                          e.preventDefault()
+                          e.stopPropagation()
+                          setSubscriptionMenuOpened(true)
+                        }
+                      }}
+                    >
+                      <Box
+                        style={{
+                          width: '16px',
+                          height: '16px',
+                          borderRadius: '50%',
+                          backgroundColor: option.value === 'none' ? 'var(--mantine-color-gray-5)' : 'var(--mantine-color-blue-5)',
+                          flexShrink: 0,
+                        }}
+                      />
+                      <Text style={{ flex: 1, color: isDisabled ? 'var(--theme-text-secondary)' : 'var(--theme-text)' }}>
+                        {option.label}
+                      </Text>
+                      {isProEffect && (
+                        <Badge 
+                          size="xs" 
+                          variant="light" 
+                          radius="sm"
+                          style={{
+                            backgroundColor: 'rgba(253, 181, 0, 0.15)',
+                            backdropFilter: 'blur(10px)',
+                            WebkitBackdropFilter: 'blur(10px)',
+                            border: '1px solid rgba(253, 181, 0, 0.3)',
+                            color: '#FDB500',
+                            fontWeight: 600,
+                          }}
+                        >
+                          Pro
+                        </Badge>
+                      )}
+                      {checked && (
+                        <IconCheck size={16} style={{ color: 'var(--mantine-color-blue-5)' }} />
+                      )}
+                    </Group>
+                  )
+                }}
                 styles={{
                   input: {
                     backgroundColor: 'var(--theme-bg)',
@@ -472,6 +653,13 @@ export function SettingsPage() {
                     },
                     '&[data-hovered]': {
                       backgroundColor: 'var(--theme-hover)',
+                    },
+                    '&[data-disabled]': {
+                      opacity: 0.6,
+                      cursor: 'not-allowed',
+                      '&:hover': {
+                        backgroundColor: 'var(--theme-surface)',
+                      },
                     },
                   },
                 }}
@@ -579,6 +767,11 @@ export function SettingsPage() {
           {/* Future settings sections can be added here */}
         </Stack>
       </Container>
+      <SubscriptionMenu
+        opened={subscriptionMenuOpened}
+        onClose={() => setSubscriptionMenuOpened(false)}
+        initialTab="upgrade"
+      />
     </Box>
   )
 }

@@ -1,9 +1,11 @@
-import { Card, Text, Stack, Group, Box, Divider, Button, ActionIcon } from '@mantine/core'
+import { Card, Text, Stack, Group, Box, Divider, Button, ActionIcon, Badge, Overlay } from '@mantine/core'
 import { useMediaQuery } from '@mantine/hooks'
-import { IconBrain, IconTrendingUp, IconSparkles, IconBulb, IconChevronLeft, IconChevronRight, IconCalendar, IconList, IconChevronDown, IconChevronUp } from '@tabler/icons-react'
+import { IconBrain, IconTrendingUp, IconSparkles, IconBulb, IconChevronLeft, IconChevronRight, IconCalendar, IconList, IconChevronDown, IconChevronUp, IconCrown, IconLock } from '@tabler/icons-react'
 import { useEffect, useState } from 'react'
 import { apiClient } from '../../utils/api'
 import { InsightsListModal } from './InsightsListModal'
+import { useSubscription } from '../../contexts/SubscriptionContext'
+import { SubscriptionMenu } from '../subscription/SubscriptionMenu'
 
 // Функция для получения ISO недели из даты
 function getISOWeek(date: Date): { year: number; week: number } {
@@ -44,12 +46,15 @@ interface WeeklyInsight {
 
 export function WeeklySummaryCard() {
   const isMobile = useMediaQuery('(max-width: 768px)')
+  const { canUseFeature } = useSubscription()
   const [insight, setInsight] = useState<WeeklyInsight | null>(null)
   const [loading, setLoading] = useState(true)
   const [generating, setGenerating] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [listModalOpened, setListModalOpened] = useState(false)
   const [isCollapsed, setIsCollapsed] = useState(false)
+  const [subscriptionMenuOpened, setSubscriptionMenuOpened] = useState(false)
+  const hasAccess = canUseFeature('has_weekly_insights')
   
   // Состояние для текущей недели
   const now = new Date()
@@ -72,6 +77,10 @@ export function WeeklySummaryCard() {
   }
 
   useEffect(() => {
+    if (!hasAccess) {
+      setLoading(false)
+      return
+    }
     const fetchExistingInsight = async () => {
       setLoading(true)
       setInsight(null)
@@ -108,7 +117,7 @@ export function WeeklySummaryCard() {
       }
     }
     fetchExistingInsight()
-  }, [currentYear, currentWeek])
+  }, [currentYear, currentWeek, hasAccess])
 
   const handlePrevious = () => {
     if (currentWeek > 1) {
@@ -236,32 +245,66 @@ export function WeeklySummaryCard() {
         border: '1px solid var(--theme-border)',
         transition: 'all 0.3s ease',
         boxShadow: '0 2px 8px rgba(0, 0, 0, 0.05)',
+        position: 'relative',
       }}
       onMouseEnter={(e) => {
-        e.currentTarget.style.boxShadow = '0 4px 16px rgba(0, 0, 0, 0.1)'
-        e.currentTarget.style.transform = 'translateY(-2px)'
+        if (hasAccess) {
+          e.currentTarget.style.boxShadow = '0 4px 16px rgba(0, 0, 0, 0.1)'
+          e.currentTarget.style.transform = 'translateY(-2px)'
+        }
       }}
       onMouseLeave={(e) => {
-        e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.05)'
-        e.currentTarget.style.transform = 'translateY(0)'
+        if (hasAccess) {
+          e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.05)'
+          e.currentTarget.style.transform = 'translateY(0)'
+        }
       }}
     >
-      <Stack gap="lg">
+      {!hasAccess && (
+        <Badge
+          color="yellow"
+          variant="light"
+          size="sm"
+          leftSection={<IconCrown size={12} />}
+          style={{
+            position: 'absolute',
+            top: '12px',
+            right: '12px',
+            zIndex: 10,
+          }}
+        >
+          Pro
+        </Badge>
+      )}
+      <Stack 
+        gap="lg" 
+        style={{ 
+          position: 'relative',
+          filter: !hasAccess ? 'blur(2px)' : 'none',
+          opacity: !hasAccess ? 0.7 : 1,
+          pointerEvents: !hasAccess ? 'none' : 'auto',
+        }}
+      >
         <Group justify="space-between" align="center" wrap="wrap">
           <Group gap="xs" align="center">
             <ActionIcon
               variant="subtle"
               size="sm"
               onClick={() => setIsCollapsed(!isCollapsed)}
+              disabled={!hasAccess}
               style={{
                 color: 'var(--theme-text)',
                 transition: 'all 0.2s ease',
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = 'var(--theme-hover)'
+                if (hasAccess) {
+                  e.currentTarget.style.backgroundColor = 'var(--theme-hover)'
+                }
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'transparent'
+                if (hasAccess) {
+                  e.currentTarget.style.backgroundColor = 'transparent'
+                }
               }}
             >
               {isCollapsed ? <IconChevronDown size={18} /> : <IconChevronUp size={18} />}
@@ -674,6 +717,57 @@ export function WeeklySummaryCard() {
           </>
         )}
       </Stack>
+      {!hasAccess && (
+        <Overlay
+          color="var(--theme-bg)"
+          opacity={0.85}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderRadius: '12px',
+            backdropFilter: 'blur(10px)',
+            WebkitBackdropFilter: 'blur(10px)',
+            backgroundColor: 'rgba(var(--theme-bg-rgb, 255, 255, 255), 0.8)',
+          }}
+        >
+          <Box 
+            style={{ 
+              textAlign: 'center', 
+              padding: '24px', 
+              maxWidth: '300px',
+              backgroundColor: 'rgba(255, 255, 255, 0.1)',
+              backdropFilter: 'blur(8px)',
+              WebkitBackdropFilter: 'blur(8px)',
+              borderRadius: '12px',
+              border: '1px solid rgba(255, 255, 255, 0.2)',
+            }}
+          >
+            <IconLock size={32} style={{ color: 'var(--theme-text-secondary)', marginBottom: '16px' }} />
+            <Text fw={600} mb="md" size="lg">
+              Требуется Pro подписка
+            </Text>
+            <Button
+              leftSection={<IconCrown size={16} />}
+              onClick={() => setSubscriptionMenuOpened(true)}
+              radius="md"
+              size="md"
+              style={{
+                backgroundColor: '#fbbf24',
+                color: '#000',
+                fontWeight: 600,
+              }}
+            >
+              Перейти на Pro
+            </Button>
+          </Box>
+        </Overlay>
+      )}
+      <SubscriptionMenu
+        opened={subscriptionMenuOpened}
+        onClose={() => setSubscriptionMenuOpened(false)}
+        initialTab="upgrade"
+      />
     </Card>
   )
 }

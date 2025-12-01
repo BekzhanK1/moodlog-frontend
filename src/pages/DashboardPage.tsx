@@ -4,6 +4,7 @@ import { Box, Alert, Stack, ScrollArea, Text, ActionIcon } from '@mantine/core'
 import { useMediaQuery } from '@mantine/hooks'
 import { IconAlertCircle, IconPlus, IconChartLine } from '@tabler/icons-react'
 import { useAuth } from '../contexts/AuthContext'
+import { useSubscription } from '../contexts/SubscriptionContext'
 import { apiClient, EntryResponse, EntryListResponse } from '../utils/api'
 import { getEditorFont } from '../utils/fonts'
 import { Navbar } from '../components/dashboard/Navbar'
@@ -12,6 +13,7 @@ import { EntryView } from '../components/dashboard/EntryView'
 import { NewEntryEditor, NewEntryEditorHandle } from '../components/dashboard/NewEntryEditor'
 import { RightSidebar } from '../components/dashboard/RightSidebar'
 import { AudioRecorder } from '../components/dashboard/AudioRecorder'
+import { SubscriptionMenu } from '../components/subscription/SubscriptionMenu'
 
 export function DashboardPage() {
   const navigate = useNavigate()
@@ -35,6 +37,7 @@ export function DashboardPage() {
   const [deletingEntryId, setDeletingEntryId] = useState<string | null>(null)
   const [draftEntryId, setDraftEntryId] = useState<string | null>(null)
   const [showAudioRecorder, setShowAudioRecorder] = useState(false)
+  const [subscriptionMenuOpened, setSubscriptionMenuOpened] = useState(false)
   const [writingQuestions, setWritingQuestions] = useState<string[]>([])
   const [questionsLoading, setQuestionsLoading] = useState<boolean>(true)
   const editorRef = useRef<NewEntryEditorHandle>(null)
@@ -47,7 +50,12 @@ export function DashboardPage() {
       navigate('/login')
       return
     }
-  }, [isAuthenticated, authLoading, navigate])
+    // Redirect admins to admin dashboard
+    if (!authLoading && isAuthenticated && user?.is_admin) {
+      navigate('/admin/dashboard')
+      return
+    }
+  }, [isAuthenticated, authLoading, navigate, user])
 
   const fetchEntries = useCallback(async (page: number, append: boolean = false) => {
     try {
@@ -90,66 +98,82 @@ export function DashboardPage() {
     }
   }, [isAuthenticated, authLoading, fetchEntries])
 
-  // Rate limiting for question refresh requests
-  const canRequestNewQuestions = useCallback((): { allowed: boolean; remaining: number; resetTime: number | null } => {
+  const { subscription } = useSubscription()
+
+  // Check skip status from localStorage (frontend-only logic)
+  const checkSkipStatus = useCallback((): { allowed: boolean; remaining: number; resetTime: number | null; errorMessage: string | null; maxSkips: number } => {
     if (!user) {
-      return { allowed: false, remaining: 0, resetTime: null }
+      return { allowed: false, remaining: 0, resetTime: null, errorMessage: null, maxSkips: 0 }
     }
 
-    const RATE_LIMIT_KEY = `ai_questions_rate_limit_${user.id}`
-    const MAX_REQUESTS = 5
-    const RATE_LIMIT_WINDOW = 60 * 60 * 1000 // 1 hour
+    // Determine limits based on subscription
+    const isPro = subscription?.plan === 'pro_month' || subscription?.plan === 'pro_year'
+    const MAX_SKIPS = isPro ? 5 : 1
+    const COOLDOWN_MS = isPro ? 60 * 60 * 1000 : 24 * 60 * 60 * 1000 // 1 hour for Pro, 1 day for Free
 
+    const SKIP_STORAGE_KEY = `ai_questions_skips_${user.id}`
+    
     try {
-      const stored = localStorage.getItem(RATE_LIMIT_KEY)
+      const stored = localStorage.getItem(SKIP_STORAGE_KEY)
       const now = Date.now()
 
       if (!stored) {
-        return { allowed: true, remaining: MAX_REQUESTS, resetTime: now + RATE_LIMIT_WINDOW }
+        return { allowed: true, remaining: MAX_SKIPS, resetTime: null, errorMessage: null, maxSkips: MAX_SKIPS }
       }
 
-      const { requests } = JSON.parse(stored)
-      // Filter out requests older than 1 hour
-      const recentRequests = requests.filter((timestamp: number) => now - timestamp < RATE_LIMIT_WINDOW)
+      const { count, resetAt } = JSON.parse(stored)
+      
+      // Check if cooldown has passed
+      if (resetAt && now < resetAt + COOLDOWN_MS) {
+        // Still in cooldown
+        if (count >= MAX_SKIPS) {
+          const timeRemaining = resetAt + COOLDOWN_MS - now
+          const hours = Math.floor(timeRemaining / (60 * 60 * 1000))
+          const minutes = Math.floor((timeRemaining % (60 * 60 * 1000)) / (60 * 1000))
+          const errorMsg = isPro 
+            ? `Сброс доступен через ${minutes}м`
+            : `Сброс доступен через ${hours}ч ${minutes}м`
+          return { 
+            allowed: false, 
+            remaining: 0, 
+            resetTime: resetAt + COOLDOWN_MS, 
+            errorMessage: errorMsg, 
+            maxSkips: MAX_SKIPS 
+          }
+        }
+      }
 
-      const remaining = MAX_REQUESTS - recentRequests.length
-      const oldestRequest = recentRequests.length > 0 ? Math.min(...recentRequests) : null
-      const resetTime = oldestRequest ? oldestRequest + RATE_LIMIT_WINDOW : null
-
-      return {
-        allowed: remaining > 0,
-        remaining: Math.max(0, remaining),
-        resetTime
+      // Cooldown passed or not started yet
+      const remaining = MAX_SKIPS - count
+      return { 
+        allowed: remaining > 0, 
+        remaining: Math.max(0, remaining), 
+        resetTime: resetAt && count >= MAX_SKIPS ? resetAt + COOLDOWN_MS : null, 
+        errorMessage: null, 
+        maxSkips: MAX_SKIPS 
       }
     } catch (error) {
-      console.error('Failed to check rate limit:', error)
-      return { allowed: true, remaining: MAX_REQUESTS, resetTime: null }
+      console.error('Failed to check skip status:', error)
+      return { allowed: true, remaining: MAX_SKIPS, resetTime: null, errorMessage: null, maxSkips: MAX_SKIPS }
     }
-  }, [user])
+  }, [user, subscription])
 
-  const recordQuestionRequest = useCallback(() => {
-    if (!user) return
+  // Sync wrapper for compatibility with RightSidebar
+  const canRequestNewQuestions = useCallback(() => {
+    return checkSkipStatus()
+  }, [checkSkipStatus])
 
-    const RATE_LIMIT_KEY = `ai_questions_rate_limit_${user.id}`
-    const RATE_LIMIT_WINDOW = 60 * 60 * 1000 // 1 hour
-    const now = Date.now()
+  // Update skip status periodically (only when needed)
+  useEffect(() => {
+    if (!isAuthenticated || authLoading || !user || !isNewEntry) return
 
-    try {
-      const stored = localStorage.getItem(RATE_LIMIT_KEY)
-      let requests: number[] = []
-
-      if (stored) {
-        const parsed = JSON.parse(stored)
-        // Filter out requests older than 1 hour
-        requests = parsed.requests.filter((timestamp: number) => now - timestamp < RATE_LIMIT_WINDOW)
-      }
-
-      requests.push(now)
-      localStorage.setItem(RATE_LIMIT_KEY, JSON.stringify({ requests }))
-    } catch (error) {
-      console.error('Failed to record question request:', error)
-    }
-  }, [user])
+    // Update status every second for countdown
+    const interval = setInterval(() => {
+      // Status is computed from localStorage, no need to set state
+    }, 1000)
+      
+    return () => clearInterval(interval)
+  }, [isAuthenticated, authLoading, user, isNewEntry])
 
   // Function to fetch writing questions with caching
   const fetchQuestions = useCallback(async (forceRefresh: boolean = false) => {
@@ -221,18 +245,77 @@ export function DashboardPage() {
     }
   }, [isAuthenticated, authLoading, user])
 
-  // Function to refresh questions (with rate limiting)
+  // Function to refresh questions (with frontend validation)
   const refreshQuestions = useCallback(async () => {
-    const rateLimit = canRequestNewQuestions()
-    
-    if (!rateLimit.allowed) {
-      return { success: false, message: 'Превышен лимит запросов. Попробуйте позже.' }
+    if (!user) {
+      return { success: false, message: 'Пользователь не найден' }
     }
 
-    recordQuestionRequest()
-    await fetchQuestions(true)
-    return { success: true }
-  }, [canRequestNewQuestions, recordQuestionRequest, fetchQuestions])
+    // Check skip status
+    const skipStatus = checkSkipStatus()
+    if (!skipStatus.allowed) {
+      return { success: false, message: skipStatus.errorMessage || 'Сброс недоступен' }
+    }
+
+    // Determine limits based on subscription
+    const isPro = subscription?.plan === 'pro_month' || subscription?.plan === 'pro_year'
+    const MAX_SKIPS = isPro ? 5 : 1
+    const COOLDOWN_MS = isPro ? 60 * 60 * 1000 : 24 * 60 * 60 * 1000
+
+    const SKIP_STORAGE_KEY = `ai_questions_skips_${user.id}`
+    
+    try {
+      // Update skip counter in localStorage
+      const stored = localStorage.getItem(SKIP_STORAGE_KEY)
+      let count = 0
+      let resetAt: number | null = null
+
+      if (stored) {
+        const parsed = JSON.parse(stored)
+        count = parsed.count || 0
+        resetAt = parsed.resetAt || null
+        
+        // Check if cooldown passed
+        if (resetAt && Date.now() >= resetAt + COOLDOWN_MS) {
+          // Reset counter
+          count = 0
+          resetAt = null
+        }
+      }
+
+      // Increment counter
+      count += 1
+      
+      // If reached max, start cooldown
+      if (count >= MAX_SKIPS) {
+        resetAt = Date.now()
+      }
+
+      localStorage.setItem(SKIP_STORAGE_KEY, JSON.stringify({ count, resetAt }))
+
+      // Call backend to generate new questions using existing endpoint
+      const response = await apiClient.getWritingQuestion(10, 3)
+      
+      // Use the new questions
+      if (response.questions && response.questions.length > 0) {
+        setWritingQuestions(response.questions)
+        // Cache the new questions
+        const CACHE_KEY = `ai_questions_${user.id}`
+        try {
+          localStorage.setItem(CACHE_KEY, JSON.stringify({
+            questions: response.questions,
+            timestamp: Date.now()
+          }))
+        } catch (error) {
+          console.error('Failed to cache questions:', error)
+        }
+      }
+      
+      return { success: true }
+    } catch (error: any) {
+      return { success: false, message: error.message || 'Не удалось сгенерировать новые вопросы' }
+    }
+  }, [fetchQuestions, user, checkSkipStatus, subscription])
 
   // Fetch writing questions once when authenticated
   useEffect(() => {
@@ -622,7 +705,9 @@ export function DashboardPage() {
         onImportComplete={() => {
           fetchEntries(1, false)
         }}
-        onAudioRecord={() => setShowAudioRecorder(true)}
+        onAudioRecord={() => {
+          setShowAudioRecorder(true)
+        }}
       />
 
       <Box style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
@@ -969,6 +1054,11 @@ export function DashboardPage() {
           </ActionIcon>
         </Box>
       )}
+      <SubscriptionMenu
+        opened={subscriptionMenuOpened}
+        onClose={() => setSubscriptionMenuOpened(false)}
+        initialTab="upgrade"
+      />
     </Box>
   )
 }
