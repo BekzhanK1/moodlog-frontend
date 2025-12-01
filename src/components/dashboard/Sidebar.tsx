@@ -10,7 +10,6 @@ import {
   Badge,
   ScrollArea,
   Drawer,
-  ActionIcon,
   Loader,
 } from '@mantine/core'
 import { useMediaQuery } from '@mantine/hooks'
@@ -628,15 +627,6 @@ export function Sidebar({
         title={
           <Group justify="space-between" style={{ width: '100%' }}>
             <Text style={{ fontWeight: 500, color: 'var(--theme-text)' }}>Записи</Text>
-            {onClose && (
-              <ActionIcon
-                variant="subtle"
-                onClick={onClose}
-                radius="md"
-              >
-                <IconX size={18} />
-              </ActionIcon>
-            )}
           </Group>
         }
         padding="md"

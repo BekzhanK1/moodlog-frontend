@@ -11,7 +11,7 @@ export function GoogleButton({ onClick, loading = false }: GoogleButtonProps) {
     <Button
       fullWidth
       size="lg"
-      radius={0}
+      radius="md"
       variant="outline"
       leftSection={<IconBrandGoogle size={20} />}
       style={{

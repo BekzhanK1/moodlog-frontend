@@ -71,8 +71,11 @@ export function RegisterPage() {
           width: '100%',
           maxWidth: '400px',
           padding: '40px',
-          backgroundColor: '#fff',
+          backgroundColor: 'rgba(255, 255, 255, 0.92)',
           border: '1px solid #eee',
+          backdropFilter: 'blur(10px)',
+          borderRadius: 12,
+          boxShadow: '0 18px 45px rgba(0, 0, 0, 0.08)',
         }}
       >
         <Stack gap="lg">
@@ -98,7 +101,7 @@ export function RegisterPage() {
                 label="Email"
                 placeholder="your@email.com"
                 required
-                radius={0}
+                radius="md"
                 styles={{
                   label: {
                     color: '#000',
@@ -114,6 +117,9 @@ export function RegisterPage() {
                       borderColor: '#000',
                       outline: 'none',
                     },
+                    '&::placeholder': {
+                      color: 'rgba(0, 0, 0, 0.2)',
+                    },
                   },
                 }}
                 {...form.getInputProps('email')}
@@ -123,7 +129,7 @@ export function RegisterPage() {
                 label="Пароль"
                 placeholder="Создайте надежный пароль"
                 required
-                radius={0}
+                radius="md"
                 styles={{
                   label: {
                     color: '#000',
@@ -138,6 +144,9 @@ export function RegisterPage() {
                     '&:focus': {
                       borderColor: '#000',
                       outline: 'none',
+                    },
+                    '&::placeholder': {
+                      color: 'rgba(0, 0, 0, 0.2)',
                     },
                   },
                 }}
@@ -150,6 +159,7 @@ export function RegisterPage() {
                     padding: '12px',
                     backgroundColor: '#f9f9f9',
                     border: '1px solid #eee',
+                    borderRadius: 12,
                   }}
                 >
                   <Text size="xs" style={{ color: '#666', marginBottom: '8px', fontWeight: 500 }}>
@@ -185,7 +195,7 @@ export function RegisterPage() {
                 label="Подтвердите пароль"
                 placeholder="Повторите пароль"
                 required
-                radius={0}
+                radius="md"
                 styles={{
                   label: {
                     color: '#000',
@@ -201,6 +211,9 @@ export function RegisterPage() {
                       borderColor: '#000',
                       outline: 'none',
                     },
+                    '&::placeholder': {
+                      color: 'rgba(0, 0, 0, 0.2)',
+                    },
                   },
                 }}
                 {...form.getInputProps('confirmPassword')}
@@ -210,7 +223,7 @@ export function RegisterPage() {
                 type="submit"
                 fullWidth
                 size="lg"
-                radius={0}
+                radius="md"
                 loading={loading}
                 disabled={loading}
                 style={{

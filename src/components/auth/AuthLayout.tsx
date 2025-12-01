@@ -1,4 +1,5 @@
-import { Box, Container, Stack } from '@mantine/core'
+import { Box, Container, Stack, Image, Group } from '@mantine/core'
+import { useMediaQuery } from '@mantine/hooks'
 import { ReactNode } from 'react'
 
 interface AuthLayoutProps {
@@ -8,6 +9,8 @@ interface AuthLayoutProps {
 }
 
 export function AuthLayout({ children, title, subtitle }: AuthLayoutProps) {
+  const isMobile = useMediaQuery('(max-width: 768px)')
+
   return (
     <Box
       style={{
@@ -56,23 +59,46 @@ export function AuthLayout({ children, title, subtitle }: AuthLayoutProps) {
         }}
       />
 
-      <Container size="xs" style={{ position: 'relative', zIndex: 1, width: '100%' }}>
+      {/* Navbar (shared with landing style, simplified) */}
+      <Box
+        component="header"
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          zIndex: 10,
+          borderBottom: '1px solid #eee',
+          backgroundColor: 'rgba(255, 255, 255, 0.92)',
+          backdropFilter: 'blur(8px)',
+          padding: isMobile ? '10px 16px' : '12px 24px',
+        }}
+      >
+        <Group justify="space-between" align="center">
+          <Group gap="xs" align="center">
+            <Image
+              src="/moodlog-logo-black.png"
+              alt="MoodLog"
+              h={28}
+              mah={28}
+              fit="contain"
+              style={{ display: 'block' }}
+            />
+          </Group>
+        </Group>
+      </Box>
+
+      <Container
+        size="xs"
+        style={{
+          position: 'relative',
+          zIndex: 1,
+          width: '100%',
+          paddingTop: isMobile ? 96 : 112,
+        }}
+      >
         <Stack gap="xl" align="center">
           <Stack gap="xs" align="center" style={{ marginBottom: '20px' }}>
-            <Box
-              component="h1"
-              style={{
-                fontSize: '48px',
-                fontWeight: 200,
-                letterSpacing: '8px',
-                textTransform: 'uppercase',
-                color: '#000',
-                margin: 0,
-                fontFamily: 'system-ui, -apple-system, sans-serif',
-              }}
-            >
-              MoodLog
-            </Box>
             <Box
               component="h2"
               style={{

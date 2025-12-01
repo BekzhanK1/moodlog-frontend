@@ -49,7 +49,7 @@ function FeatureCard({ icon: Icon, title, description, index, visible }: Feature
       {(styles) => (
         <Card
           padding={isMobile ? 'md' : 'xl'}
-          radius={0}
+          radius="md"
           style={{
             ...styles,
             backgroundColor: '#f9f9f9',
@@ -62,7 +62,7 @@ function FeatureCard({ icon: Icon, title, description, index, visible }: Feature
           <Stack gap={isMobile ? 'sm' : 'md'}>
             <ThemeIcon
               size={isMobile ? 40 : 50}
-              radius={0}
+              radius="md"
               variant="light"
               style={{
                 backgroundColor: '#eee',
@@ -606,6 +606,7 @@ function LandingPage() {
                       width: isMobile ? '60px' : '80px',
                       height: isMobile ? '60px' : '80px',
                       border: '1px solid #ddd',
+                      borderRadius: '12px',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -710,7 +711,7 @@ function LandingPage() {
               component={Link}
               to="/register"
               size={isMobile ? 'md' : 'lg'}
-              radius={0}
+              radius="md"
               variant="filled"
               fullWidth={isMobile}
               style={{
