@@ -160,6 +160,49 @@ export interface PromoCodeRedeemResponse {
   expires_at: string
 }
 
+// Admin metrics types
+export interface AdminEngagementMetrics {
+  total_users: number
+  dau: number
+  wau: number
+  mau: number
+  avg_entries_per_active_user_30d: number
+}
+
+export interface AdminMoodMetrics {
+  avg_mood_all_time: number | null
+  avg_mood_30d: number | null
+  entries_with_mood_ratio: number
+}
+
+export interface AdminRevenueMetrics {
+  total_revenue: number
+  pro_month_users: number
+  pro_year_users: number
+  avg_month_payment: number
+  avg_year_payment: number
+  mrr_estimate: number
+}
+
+// Admin metrics history types
+export interface AdminEngagementHistoryPoint {
+  date: string
+  dau: number
+  new_users: number
+}
+
+export interface AdminMoodHistoryPoint {
+  date: string
+  avg_mood: number | null
+  entries_with_mood: number
+}
+
+export interface AdminRevenueHistoryPoint {
+  date: string
+  total_revenue: number
+  payments_count: number
+}
+
 export interface EntryCreateRequest {
   title?: string | null
   content: string
@@ -638,6 +681,37 @@ class ApiClient {
       method: 'POST',
       body: JSON.stringify(request),
     })
+  }
+
+  // Admin metrics endpoints
+  async getAdminEngagementMetrics(): Promise<AdminEngagementMetrics> {
+    return this.request<AdminEngagementMetrics>('/admin/metrics/engagement')
+  }
+
+  async getAdminMoodMetrics(): Promise<AdminMoodMetrics> {
+    return this.request<AdminMoodMetrics>('/admin/metrics/mood')
+  }
+
+  async getAdminRevenueMetrics(): Promise<AdminRevenueMetrics> {
+    return this.request<AdminRevenueMetrics>('/admin/metrics/revenue')
+  }
+
+  async getAdminEngagementHistory(days: number = 30): Promise<AdminEngagementHistoryPoint[]> {
+    return this.request<AdminEngagementHistoryPoint[]>(
+      `/admin/metrics/engagement/history?days=${days}`,
+    )
+  }
+
+  async getAdminMoodHistory(days: number = 30): Promise<AdminMoodHistoryPoint[]> {
+    return this.request<AdminMoodHistoryPoint[]>(
+      `/admin/metrics/mood/history?days=${days}`,
+    )
+  }
+
+  async getAdminRevenueHistory(days: number = 90): Promise<AdminRevenueHistoryPoint[]> {
+    return this.request<AdminRevenueHistoryPoint[]>(
+      `/admin/metrics/revenue/history?days=${days}`,
+    )
   }
 }
 

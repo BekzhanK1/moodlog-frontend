@@ -12,6 +12,7 @@ import { AnalyticsPage } from './pages/AnalyticsPage'
 import { TutorialPage } from './pages/TutorialPage'
 import { AdminPromoCodesPage } from './pages/AdminPromoCodesPage'
 import { AdminDashboardPage } from './pages/AdminDashboardPage'
+import { AdminAnalyticsPage } from './pages/AdminAnalyticsPage'
 import { AuthProvider } from './contexts/AuthContext'
 import { SubscriptionProvider } from './contexts/SubscriptionContext'
 import { ThemeProvider, useTheme } from './contexts/ThemeContext'
@@ -68,6 +69,7 @@ function AppContent() {
             <Route path="/auth/callback" element={<AuthCallbackPage />} />
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
+            <Route path="/admin/analytics" element={<AdminAnalyticsPage />} />
             <Route path="/analytics" element={<AnalyticsPage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/profile" element={<ProfilePage />} />
