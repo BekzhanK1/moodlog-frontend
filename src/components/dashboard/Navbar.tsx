@@ -69,16 +69,23 @@ export function Navbar({ userPicture, onMenuClick, onImportComplete, onAudioReco
               <IconMenu2 size={22} />
             </ActionIcon>
           )}
-          <Group gap={isMobile ? 6 : 10} align="center" style={{ cursor: 'pointer' }} onClick={() => navigate(user?.is_admin ? '/admin/dashboard' : '/dashboard')}>
-            <Image
-              src={logoSrc}
-              alt="MoodLog"
-              h={isMobile ? 22 : 26}
-              mah={isMobile ? 22 : 26}
-              fit="contain"
-              style={{ display: 'block' }}
-            />
-          </Group>
+          {!isMobile && (
+            <Group
+              gap={10}
+              align="center"
+              style={{ cursor: 'pointer' }}
+              onClick={() => navigate(user?.is_admin ? '/admin/dashboard' : '/dashboard')}
+            >
+              <Image
+                src={logoSrc}
+                alt="MoodLog"
+                h={26}
+                mah={26}
+                fit="contain"
+                style={{ display: 'block' }}
+              />
+            </Group>
+          )}
         </Group>
 
         <Group gap={isMobile ? 4 : 'sm'} align="center">
