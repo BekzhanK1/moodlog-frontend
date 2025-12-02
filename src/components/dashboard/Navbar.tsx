@@ -81,7 +81,7 @@ export function Navbar({ userPicture, onMenuClick, onImportComplete, onAudioReco
           </Group>
         </Group>
 
-        <Group gap={isMobile ? 'xs' : 'sm'} align="center">
+        <Group gap={isMobile ? 4 : 'sm'} align="center">
           {/* Plan Badge / Upgrade Button */}
           {!isMobile && (
             <>
@@ -151,28 +151,6 @@ export function Navbar({ userPicture, onMenuClick, onImportComplete, onAudioReco
               <IconMicrophone size={isMobile ? 22 : 20} />
             </ActionIcon>
           )}
-          <ActionIcon
-            variant="subtle"
-            radius="md"
-            size={isMobile ? 'lg' : 'md'}
-            onClick={() => navigate('/settings')}
-            styles={{
-              root: {
-                color: 'var(--theme-text)',
-                backgroundColor: 'transparent',
-                transition: 'background-color 0.2s ease, color 0.2s ease',
-                '&:hover': {
-                  backgroundColor: 'var(--theme-hover)',
-                },
-                '&[data-hovered]': {
-                  backgroundColor: 'var(--theme-hover)',
-                },
-              },
-            }}
-            title="Настройки"
-          >
-            <IconSettings size={isMobile ? 22 : 20} />
-          </ActionIcon>
 
           <Menu
             shadow="md"
@@ -291,6 +269,12 @@ export function Navbar({ userPicture, onMenuClick, onImportComplete, onAudioReco
                 onClick={() => navigate('/profile')}
               >
                 Профиль
+              </Menu.Item>
+              <Menu.Item
+                leftSection={<IconSettings size={16} />}
+                onClick={() => navigate('/settings')}
+              >
+                Настройки
               </Menu.Item>
               {user?.is_admin && (
                 <Menu.Item
