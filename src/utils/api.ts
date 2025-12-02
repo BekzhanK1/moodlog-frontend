@@ -131,6 +131,7 @@ export interface PromoCodeCreateRequest {
   plan: 'pro_month' | 'pro_year'
   code?: string
   expires_at?: string
+  max_uses?: number
 }
 
 export interface PromoCodeResponse {
@@ -138,6 +139,8 @@ export interface PromoCodeResponse {
   code: string
   plan: string
   created_by: string
+  max_uses: number
+  uses_count: number
   used_by: string | null
   used_at: string | null
   is_used: boolean
@@ -674,6 +677,12 @@ class ApiClient {
     params.append('include_used', includeUsed.toString())
     if (limit) params.append('limit', limit.toString())
     return this.request<PromoCodeListResponse>(`/admin/promo-codes?${params.toString()}`)
+  }
+
+  async deletePromoCode(promoCodeId: string): Promise<void> {
+    await this.request<void>(`/admin/promo-codes/${promoCodeId}`, {
+      method: 'DELETE',
+    })
   }
 
   async redeemPromoCode(request: PromoCodeRedeemRequest): Promise<PromoCodeRedeemResponse> {

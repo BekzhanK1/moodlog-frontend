@@ -15,7 +15,7 @@ import {
 import { useMediaQuery } from '@mantine/hooks'
 import { IconCrown, IconChartLine, IconMoodSmile, IconCurrencyDollar } from '@tabler/icons-react'
 import { useAuth } from '../contexts/AuthContext'
-import { Navbar } from '../components/dashboard/Navbar'
+import { AdminNavbar } from '../components/admin/AdminNavbar'
 import {
   apiClient,
   AdminEngagementMetrics,
@@ -94,15 +94,19 @@ export function AdminAnalyticsPage() {
     <Box
       style={{
         minHeight: '100vh',
-        backgroundColor: 'var(--theme-bg)',
+        background:
+          'radial-gradient(circle at top, rgba(56,189,248,0.18), transparent 55%), radial-gradient(circle at bottom, rgba(129,140,248,0.18), transparent 55%)',
         display: 'flex',
         flexDirection: 'column',
       }}
     >
-      <Navbar userPicture={user?.picture} />
+      <AdminNavbar userPicture={user?.picture} />
       <Container
         size="xl"
-        style={{ flex: 1, padding: isMobile ? '24px 16px' : '32px 24px' }}
+        style={{
+          flex: 1,
+          padding: isMobile ? '24px 16px 32px' : '32px 24px 40px',
+        }}
       >
         <Stack
           gap="xl"
@@ -126,6 +130,10 @@ export function AdminAnalyticsPage() {
               variant="light"
               size="lg"
               leftSection={<IconCrown size={16} />}
+              style={{
+                borderRadius: 999,
+                boxShadow: '0 10px 30px rgba(250, 204, 21, 0.18)',
+              }}
             >
               Администратор
             </Badge>
@@ -145,6 +153,7 @@ export function AdminAnalyticsPage() {
                 style={{
                   backgroundColor: 'var(--theme-surface)',
                   borderColor: 'var(--theme-border)',
+                  boxShadow: '0 18px 45px rgba(15,23,42,0.18)',
                 }}
               >
                 <Stack gap="md">
@@ -281,6 +290,7 @@ export function AdminAnalyticsPage() {
                 style={{
                   backgroundColor: 'var(--theme-surface)',
                   borderColor: 'var(--theme-border)',
+                  boxShadow: '0 18px 45px rgba(15,23,42,0.18)',
                 }}
               >
                 <Stack gap="md">

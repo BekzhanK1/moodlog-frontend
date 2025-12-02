@@ -14,7 +14,7 @@ import {
 import { useMediaQuery } from '@mantine/hooks'
 import { IconCrown, IconPlus, IconChartLine } from '@tabler/icons-react'
 import { useAuth } from '../contexts/AuthContext'
-import { Navbar } from '../components/dashboard/Navbar'
+import { AdminNavbar } from '../components/admin/AdminNavbar'
 
 export function AdminDashboardPage() {
   const navigate = useNavigate()
@@ -37,17 +37,18 @@ export function AdminDashboardPage() {
     <Box
       style={{
         minHeight: '100vh',
-        backgroundColor: 'var(--theme-bg)',
+        background:
+          'radial-gradient(circle at top, rgba(56,189,248,0.18), transparent 55%), radial-gradient(circle at bottom, rgba(129,140,248,0.18), transparent 55%)',
         display: 'flex',
         flexDirection: 'column',
       }}
     >
-      <Navbar userPicture={user?.picture} />
+      <AdminNavbar userPicture={user?.picture} />
       <Container
         size="xl"
         style={{
           flex: 1,
-          padding: isMobile ? '24px 16px' : '32px 24px',
+          padding: isMobile ? '24px 16px 32px' : '32px 24px 40px',
         }}
       >
         <Stack
@@ -72,6 +73,10 @@ export function AdminDashboardPage() {
               variant="light"
               size="lg"
               leftSection={<IconCrown size={16} />}
+              style={{
+                borderRadius: 999,
+                boxShadow: '0 10px 30px rgba(250, 204, 21, 0.18)',
+              }}
             >
               Администратор
             </Badge>
@@ -83,10 +88,9 @@ export function AdminDashboardPage() {
             withBorder
             radius="lg"
             style={{
-              background:
-                'linear-gradient(135deg, rgba(148, 163, 184, 0.06), rgba(15, 23, 42, 0.35))',
+              backgroundColor: 'var(--theme-surface)',
               borderColor: 'var(--theme-border)',
-              boxShadow: '0 18px 45px rgba(15, 23, 42, 0.35)',
+              boxShadow: '0 18px 45px rgba(15, 23, 42, 0.18)',
             }}
           >
             <Stack gap="md">
@@ -112,14 +116,13 @@ export function AdminDashboardPage() {
                 <Button
                   leftSection={<IconPlus size={16} />}
                   onClick={() => navigate('/admin/promo-codes')}
-                  variant="light"
+                  variant={isMobile ? 'filled' : 'gradient'}
                   radius="xl"
                   style={{
                     paddingInline: isMobile ? 16 : 20,
-                    backgroundColor: 'var(--theme-primary)',
-                    color: 'var(--theme-bg)',
                     boxShadow: '0 10px 25px rgba(56, 189, 248, 0.4)',
                   }}
+                  gradient={{ from: 'cyan', to: 'indigo', deg: 135 }}
                 >
                   Промокоды
                 </Button>

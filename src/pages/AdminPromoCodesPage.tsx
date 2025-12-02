@@ -19,6 +19,7 @@ import {
   Loader,
   CopyButton,
   Tooltip,
+  NumberInput,
 } from '@mantine/core'
 import { useMediaQuery } from '@mantine/hooks'
 import {
@@ -27,10 +28,11 @@ import {
   IconCheck,
   IconAlertCircle,
   IconArrowLeft,
+  IconTrash,
 } from '@tabler/icons-react'
 import { useAuth } from '../contexts/AuthContext'
 import { apiClient, PromoCodeResponse } from '../utils/api'
-import { Navbar } from '../components/dashboard/Navbar'
+import { AdminNavbar } from '../components/admin/AdminNavbar'
 import { notifications } from '@mantine/notifications'
 
 export function AdminPromoCodesPage() {
@@ -43,6 +45,8 @@ export function AdminPromoCodesPage() {
   const [selectedPlan, setSelectedPlan] = useState<'pro_month' | 'pro_year' | null>(null)
   const [customCode, setCustomCode] = useState('')
   const [creating, setCreating] = useState(false)
+  const [maxUses, setMaxUses] = useState<number | ''>(1)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
 
   useEffect(() => {
     if (user && !user.is_admin) {
@@ -70,6 +74,28 @@ export function AdminPromoCodesPage() {
     }
   }
 
+  const handleDeletePromoCode = async (id: string) => {
+    if (deletingId) return
+    setDeletingId(id)
+    try {
+      await apiClient.deletePromoCode(id)
+      setPromoCodes((prev) => prev.filter((pc) => pc.id !== id))
+      notifications.show({
+        title: 'Удалено',
+        message: 'Промокод удален',
+        color: 'green',
+      })
+    } catch (error: any) {
+      notifications.show({
+        title: 'Ошибка',
+        message: error.message || 'Не удалось удалить промокод',
+        color: 'red',
+      })
+    } finally {
+      setDeletingId(null)
+    }
+  }
+
   const handleCreatePromoCode = async () => {
     if (!selectedPlan) {
       notifications.show({
@@ -85,6 +111,7 @@ export function AdminPromoCodesPage() {
       await apiClient.createPromoCode({
         plan: selectedPlan,
         code: customCode.trim() || undefined,
+        max_uses: typeof maxUses === 'number' ? maxUses : undefined,
       })
       notifications.show({
         title: 'Успех!',
@@ -94,6 +121,7 @@ export function AdminPromoCodesPage() {
       setCreateModalOpened(false)
       setSelectedPlan(null)
       setCustomCode('')
+      setMaxUses(1)
       await loadPromoCodes()
     } catch (error: any) {
       notifications.show({
@@ -125,17 +153,29 @@ export function AdminPromoCodesPage() {
     <Box
       style={{
         minHeight: '100vh',
-        backgroundColor: 'var(--theme-bg)',
+        background: 'radial-gradient(circle at top, rgba(56,189,248,0.18), transparent 55%), radial-gradient(circle at bottom, rgba(129,140,248,0.18), transparent 55%)',
         display: 'flex',
         flexDirection: 'column',
       }}
     >
-      <Navbar userPicture={user?.picture} />
-      <Container size="xl" style={{ flex: 1, padding: isMobile ? '24px 16px' : '32px 24px' }}>
-        <Stack gap="lg">
+      <AdminNavbar userPicture={user?.picture} />
+      <Container
+        size="xl"
+        style={{
+          flex: 1,
+          padding: isMobile ? '24px 16px 32px' : '32px 24px 40px',
+        }}
+      >
+        <Stack
+          gap="lg"
+          style={{
+            maxWidth: 1120,
+            margin: '0 auto',
+          }}
+        >
           {/* Header */}
-          <Group justify="space-between" align="center">
-            <Group gap="md">
+          <Group justify="space-between" align="center" mb="xs">
+            <Group gap="sm">
               <ActionIcon
                 variant="subtle"
                 size="lg"
@@ -143,19 +183,40 @@ export function AdminPromoCodesPage() {
               >
                 <IconArrowLeft size={20} />
               </ActionIcon>
-              <Title order={2}>Управление промокодами</Title>
+              <div>
+                <Title order={2}>Управление промокодами</Title>
+                <Text size="sm" c="dimmed">
+                  Создавайте, раздавайте и контролируйте промокоды для Pro-подписок
+                </Text>
+              </div>
             </Group>
             <Button
               leftSection={<IconPlus size={16} />}
               onClick={() => setCreateModalOpened(true)}
+              radius="xl"
+              variant={isMobile ? 'filled' : 'gradient'}
+              gradient={{ from: 'cyan', to: 'indigo', deg: 135 }}
             >
               Создать промокод
             </Button>
           </Group>
 
           {/* Stats */}
-          <Group gap="md">
-            <Card padding="md" withBorder>
+          <Group
+            gap="md"
+            wrap="wrap"
+          >
+            <Card
+              padding="md"
+              radius="lg"
+              withBorder
+              style={{
+                minWidth: 220,
+                flex: '1 1 0',
+                backgroundColor: 'var(--theme-surface)',
+                borderColor: 'var(--theme-border)',
+              }}
+            >
               <Text size="sm" c="dimmed" mb={4}>
                 Всего промокодов
               </Text>
@@ -163,20 +224,43 @@ export function AdminPromoCodesPage() {
                 {promoCodes.length}
               </Text>
             </Card>
-            <Card padding="md" withBorder>
+            <Card
+              padding="md"
+              radius="lg"
+              withBorder
+              style={{
+                minWidth: 220,
+                flex: '1 1 0',
+                backgroundColor: 'var(--theme-surface)',
+                borderColor: 'var(--theme-border)',
+              }}
+            >
               <Text size="sm" c="dimmed" mb={4}>
-                Использовано
+                Всего использований
               </Text>
               <Text size="xl" fw={700}>
-                {promoCodes.filter((pc) => pc.is_used).length}
+                {promoCodes.reduce((sum, pc) => sum + pc.uses_count, 0)}
               </Text>
             </Card>
-            <Card padding="md" withBorder>
+            <Card
+              padding="md"
+              radius="lg"
+              withBorder
+              style={{
+                minWidth: 220,
+                flex: '1 1 0',
+                backgroundColor: 'var(--theme-surface)',
+                borderColor: 'var(--theme-border)',
+              }}
+            >
               <Text size="sm" c="dimmed" mb={4}>
-                Доступно
+                Осталось использований
               </Text>
               <Text size="xl" fw={700}>
-                {promoCodes.filter((pc) => !pc.is_used).length}
+                {promoCodes.reduce(
+                  (sum, pc) => sum + Math.max(pc.max_uses - pc.uses_count, 0),
+                  0,
+                )}
               </Text>
             </Card>
           </Group>
@@ -187,17 +271,37 @@ export function AdminPromoCodesPage() {
               <Loader />
             </Group>
           ) : promoCodes.length === 0 ? (
-            <Alert icon={<IconAlertCircle size={16} />} title="Нет промокодов">
+            <Alert
+              icon={<IconAlertCircle size={16} />}
+              title="Нет промокодов"
+              radius="lg"
+              variant="light"
+            >
               Создайте первый промокод, нажав кнопку "Создать промокод"
             </Alert>
           ) : (
-            <Card padding={0} withBorder>
-              <Table.ScrollContainer minWidth={600}>
-                <Table verticalSpacing="md" horizontalSpacing="md">
+            <Card
+              padding={0}
+              withBorder
+              radius="lg"
+              style={{
+                overflow: 'hidden',
+                backgroundColor: 'var(--theme-surface)',
+                borderColor: 'var(--theme-border)',
+              }}
+            >
+              <Table.ScrollContainer minWidth={isMobile ? 520 : 720}>
+                <Table
+                  verticalSpacing="md"
+                  horizontalSpacing="md"
+                  highlightOnHover
+                  striped
+                >
                   <Table.Thead>
                     <Table.Tr>
                       <Table.Th>Код</Table.Th>
                       <Table.Th>План</Table.Th>
+                      <Table.Th>Использования</Table.Th>
                       <Table.Th>Статус</Table.Th>
                       <Table.Th>Создан</Table.Th>
                       <Table.Th>Использован</Table.Th>
@@ -240,7 +344,12 @@ export function AdminPromoCodesPage() {
                           </Badge>
                         </Table.Td>
                         <Table.Td>
-                          {promoCode.is_used ? (
+                          <Text size="sm">
+                            {promoCode.uses_count} / {promoCode.max_uses}
+                          </Text>
+                        </Table.Td>
+                        <Table.Td>
+                          {promoCode.is_used || promoCode.uses_count >= promoCode.max_uses ? (
                             <Badge color="red" variant="light">
                               Использован
                             </Badge>
@@ -259,19 +368,31 @@ export function AdminPromoCodesPage() {
                           </Text>
                         </Table.Td>
                         <Table.Td>
-                          <CopyButton value={promoCode.code}>
-                            {({ copied, copy }) => (
-                              <Tooltip label={copied ? 'Скопировано' : 'Копировать код'}>
-                                <ActionIcon variant="subtle" onClick={copy}>
-                                  {copied ? (
-                                    <IconCheck size={16} />
-                                  ) : (
-                                    <IconCopy size={16} />
-                                  )}
-                                </ActionIcon>
-                              </Tooltip>
-                            )}
-                          </CopyButton>
+                          <Group gap="xs">
+                            <CopyButton value={promoCode.code}>
+                              {({ copied, copy }) => (
+                                <Tooltip label={copied ? 'Скопировано' : 'Копировать код'}>
+                                  <ActionIcon variant="subtle" onClick={copy}>
+                                    {copied ? (
+                                      <IconCheck size={16} />
+                                    ) : (
+                                      <IconCopy size={16} />
+                                    )}
+                                  </ActionIcon>
+                                </Tooltip>
+                              )}
+                            </CopyButton>
+                            <Tooltip label="Удалить промокод">
+                              <ActionIcon
+                                color="red"
+                                variant="subtle"
+                                loading={deletingId === promoCode.id}
+                                onClick={() => handleDeletePromoCode(promoCode.id)}
+                              >
+                                <IconTrash size={16} />
+                              </ActionIcon>
+                            </Tooltip>
+                          </Group>
                         </Table.Td>
                       </Table.Tr>
                     ))}
@@ -290,14 +411,17 @@ export function AdminPromoCodesPage() {
           setCreateModalOpened(false)
           setSelectedPlan(null)
           setCustomCode('')
+          setMaxUses(1)
         }}
         title="Создать промокод"
         centered
+        radius="lg"
+        overlayProps={{ blur: 6, opacity: 0.25 }}
       >
         <Stack gap="md">
           <Select
-            label="Выберите план"
-            placeholder="Выберите план для промокода"
+            label="План"
+            placeholder="Выберите план"
             data={[
               { value: 'pro_month', label: 'Pro Месяц' },
               { value: 'pro_year', label: 'Pro Год' },
@@ -305,14 +429,37 @@ export function AdminPromoCodesPage() {
             value={selectedPlan}
             onChange={(value) => setSelectedPlan(value as 'pro_month' | 'pro_year' | null)}
             required
+            radius="xl"
+            size="md"
           />
           <TextInput
-            label="Промокод (необязательно)"
+            label="Код промокода"
             placeholder="Оставьте пустым для автогенерации"
             value={customCode}
             onChange={(e) => setCustomCode(e.target.value.toUpperCase())}
-            description="Минимум 6 символов. Если не указано, будет сгенерирован автоматически."
+            radius="xl"
+            size="md"
           />
+          <NumberInput
+            label="Количество использований"
+            min={1}
+            value={maxUses}
+            onChange={(value) => {
+              if (value === '' || value === null) {
+                setMaxUses('')
+              } else {
+                const num = typeof value === 'number' ? value : Number(value)
+                setMaxUses(Number.isNaN(num) ? '' : num)
+              }
+            }}
+            radius="xl"
+            size="md"
+          />
+          <Text size="xs" c="dimmed">
+            Промокод можно активировать только пользователям с планом Free или Trial. После активации
+            выбранный Pro-план включится на их аккаунте, а количество использований уменьшается,
+            пока не достигнет заданного лимита.
+          </Text>
           <Group justify="flex-end" mt="md">
             <Button
               variant="subtle"
@@ -320,6 +467,7 @@ export function AdminPromoCodesPage() {
                 setCreateModalOpened(false)
                 setSelectedPlan(null)
                 setCustomCode('')
+                setMaxUses(1)
               }}
             >
               Отмена
@@ -329,6 +477,7 @@ export function AdminPromoCodesPage() {
               loading={creating}
               leftSection={<IconPlus size={16} />}
               disabled={!selectedPlan}
+              radius="xl"
             >
               Создать
             </Button>
