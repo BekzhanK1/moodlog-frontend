@@ -162,7 +162,7 @@ function LandingPage() {
           padding: isMobile ? '10px 12px' : '12px 20px',
         }}
       >
-        <Group justify="space-between" align="center">
+        <Group justify="space-between" align="center" wrap="nowrap">
           <Group gap="xs" align="center">
             <Box
               component={Link}

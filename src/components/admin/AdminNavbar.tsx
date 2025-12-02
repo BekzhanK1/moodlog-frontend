@@ -46,7 +46,7 @@ export function AdminNavbar({ userPicture }: AdminNavbarProps) {
         WebkitBackdropFilter: 'blur(10px)',
       }}
     >
-      <Group justify="space-between" style={{ width: '100%' }}>
+      <Group justify="space-between" wrap="nowrap" style={{ width: '100%' }}>
         <Group gap={isMobile ? 'sm' : 'md'} align="center">
           <Group
             gap={isMobile ? 6 : 10}

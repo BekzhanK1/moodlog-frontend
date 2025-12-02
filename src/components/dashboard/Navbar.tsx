@@ -44,7 +44,7 @@ export function Navbar({ userPicture, onMenuClick, onImportComplete, onAudioReco
         WebkitBackdropFilter: 'blur(10px)',
       }}
     >
-      <Group justify="space-between" style={{ width: '100%' }}>
+      <Group justify="space-between" wrap="nowrap" style={{ width: '100%' }}>
         <Group gap={isMobile ? 'sm' : 'md'} align="center">
           {isMobile && onMenuClick && (
             <ActionIcon
