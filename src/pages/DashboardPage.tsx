@@ -14,6 +14,7 @@ import { NewEntryEditor, NewEntryEditorHandle } from '../components/dashboard/Ne
 import { RightSidebar } from '../components/dashboard/RightSidebar'
 import { AudioRecorder } from '../components/dashboard/AudioRecorder'
 import { SubscriptionMenu } from '../components/subscription/SubscriptionMenu'
+import { WeatherData, getCurrentWeather } from '../utils/weather'
 
 export function DashboardPage() {
   const navigate = useNavigate()
@@ -43,6 +44,11 @@ export function DashboardPage() {
   const editorRef = useRef<NewEntryEditorHandle>(null)
   const hasAutoOpenedRef = useRef(false) // Track if we've auto-opened editor on initial load
   const isMobile = useMediaQuery('(max-width: 768px)')
+
+  // Weather state for mobile (mirrors RightSidebar weather for desktop)
+  const [weather, setWeather] = useState<WeatherData | null>(null)
+  const [weatherLoading, setWeatherLoading] = useState(false)
+  const [weatherError, setWeatherError] = useState<string | null>(null)
 
   useEffect(() => {
     // Wait for auth to finish loading before checking authentication
@@ -118,45 +124,92 @@ export function DashboardPage() {
       const now = Date.now()
 
       if (!stored) {
-        return { allowed: true, remaining: MAX_SKIPS, resetTime: null, errorMessage: null, maxSkips: MAX_SKIPS }
-      }
-
-      const { count, resetAt } = JSON.parse(stored)
-      
-      // Check if cooldown has passed
-      if (resetAt && now < resetAt + COOLDOWN_MS) {
-        // Still in cooldown
-        if (count >= MAX_SKIPS) {
-          const timeRemaining = resetAt + COOLDOWN_MS - now
-          const hours = Math.floor(timeRemaining / (60 * 60 * 1000))
-          const minutes = Math.floor((timeRemaining % (60 * 60 * 1000)) / (60 * 1000))
-          const errorMsg = isPro 
-            ? `Сброс доступен через ${minutes}м`
-            : `Сброс доступен через ${hours}ч ${minutes}м`
-          return { 
-            allowed: false, 
-            remaining: 0, 
-            resetTime: resetAt + COOLDOWN_MS, 
-            errorMessage: errorMsg, 
-            maxSkips: MAX_SKIPS 
-          }
+        return {
+          allowed: true,
+          remaining: MAX_SKIPS,
+          resetTime: null,
+          errorMessage: null,
+          maxSkips: MAX_SKIPS,
         }
       }
 
-      // Cooldown passed or not started yet
+      let { count, resetAt } = JSON.parse(stored) as { count?: number; resetAt?: number | null }
+      count = count || 0
+      resetAt = resetAt || null
+
+      // If cooldown has fully passed, reset counters
+      if (resetAt && now >= resetAt + COOLDOWN_MS) {
+        count = 0
+        resetAt = null
+        try {
+          localStorage.setItem(SKIP_STORAGE_KEY, JSON.stringify({ count, resetAt }))
+        } catch (e) {
+          console.error('Failed to reset skip status:', e)
+        }
+      }
+
+      // If still in cooldown and limit was reached
+      if (resetAt && now < resetAt + COOLDOWN_MS && count >= MAX_SKIPS) {
+        const timeRemaining = resetAt + COOLDOWN_MS - now
+        const hours = Math.floor(timeRemaining / (60 * 60 * 1000))
+        const minutes = Math.floor((timeRemaining % (60 * 60 * 1000)) / (60 * 1000))
+        const errorMsg = isPro
+          ? `Сброс доступен через ${minutes}м`
+          : `Сброс доступен через ${hours}ч ${minutes}м`
+        return {
+          allowed: false,
+          remaining: 0,
+          resetTime: resetAt + COOLDOWN_MS,
+          errorMessage: errorMsg,
+          maxSkips: MAX_SKIPS,
+        }
+      }
+
+      // Cooldown не идёт или лимит ещё не достигнут
       const remaining = MAX_SKIPS - count
-      return { 
-        allowed: remaining > 0, 
-        remaining: Math.max(0, remaining), 
-        resetTime: resetAt && count >= MAX_SKIPS ? resetAt + COOLDOWN_MS : null, 
-        errorMessage: null, 
-        maxSkips: MAX_SKIPS 
+      return {
+        allowed: remaining > 0,
+        remaining: Math.max(0, remaining),
+        resetTime: resetAt && count >= MAX_SKIPS ? resetAt + COOLDOWN_MS : null,
+        errorMessage: null,
+        maxSkips: MAX_SKIPS,
       }
     } catch (error) {
       console.error('Failed to check skip status:', error)
       return { allowed: true, remaining: MAX_SKIPS, resetTime: null, errorMessage: null, maxSkips: MAX_SKIPS }
     }
   }, [user, subscription])
+
+  // Fetch weather for mobile when starting a new entry (RightSidebar handles desktop)
+  useEffect(() => {
+    if (!isMobile || !isNewEntry) return
+
+    const fetchWeather = async () => {
+      setWeatherLoading(true)
+      setWeatherError(null)
+      try {
+        const data = await getCurrentWeather()
+        setWeather(data)
+      } catch (error) {
+        console.error('Failed to fetch weather (mobile):', error)
+        if (error instanceof Error) {
+          if (error.message.includes('Geolocation')) {
+            setWeatherError('Доступ к геолокации запрещён')
+          } else if (error.message.includes('API key')) {
+            setWeatherError('API ключ не настроен')
+          } else {
+            setWeatherError('Не удалось загрузить погоду')
+          }
+        } else {
+          setWeatherError('Не удалось загрузить погоду')
+        }
+      } finally {
+        setWeatherLoading(false)
+      }
+    }
+
+    fetchWeather()
+  }, [isMobile, isNewEntry])
 
   // Sync wrapper for compatibility with RightSidebar
   const canRequestNewQuestions = useCallback(() => {
@@ -748,7 +801,15 @@ export function DashboardPage() {
             flex: 1,
             backgroundColor: 'var(--theme-bg)',
             height: '100%',
-            paddingBottom: isMobile ? '160px' : '0',
+            // Оставляем место снизу только на списке записей (когда видны плавающие кнопки снизу)
+            paddingBottom:
+              isMobile &&
+              !isNewEntry &&
+              !isEditingEntry &&
+              !showAudioRecorder &&
+              !selectedEntry
+                ? '160px'
+                : '0',
           }}
         >
           {showAudioRecorder ? (
@@ -930,6 +991,11 @@ export function DashboardPage() {
               writingQuestions={writingQuestions}
               questionsLoading={questionsLoading}
               fontFamily={getEditorFont()}
+              weather={weather}
+              weatherLoading={weatherLoading}
+              weatherError={weatherError}
+              onRefreshQuestions={refreshQuestions}
+              canRefreshQuestions={canRequestNewQuestions}
             />
           ) : selectedEntry ? (
             <Box

@@ -2,8 +2,9 @@ import { useState, forwardRef, useImperativeHandle, useEffect, useRef } from 're
 import * as React from 'react'
 import { Box, TextInput, Textarea, Stack, Button, Group, Divider, Text, Loader } from '@mantine/core'
 import { useMediaQuery } from '@mantine/hooks'
-import { IconCheck, IconLoader, IconX } from '@tabler/icons-react'
+import { IconCheck, IconLoader, IconX, IconTemperature, IconRefresh } from '@tabler/icons-react'
 import { getEditorFont, getFontFamily, FontFamily } from '../../utils/fonts'
+import { WeatherData, getWeatherIconUrl } from '../../utils/weather'
 
 export interface NewEntryEditorHandle {
   getTitle: () => string
@@ -27,6 +28,19 @@ interface NewEntryEditorProps {
   writingQuestions?: string[] // Dynamic questions to display
   questionsLoading?: boolean // Whether questions are loading
   fontFamily?: FontFamily // Selected font family
+  // Optional weather info for mobile view (mirrors RightSidebar weather block)
+  weather?: WeatherData | null
+  weatherLoading?: boolean
+  weatherError?: string | null
+  // Optional AI questions controls for mobile (cooldown logic)
+  onRefreshQuestions?: () => Promise<{ success: boolean; message?: string }>
+  canRefreshQuestions?: () => {
+    allowed: boolean
+    remaining: number
+    resetTime: number | null
+    isUnlimited?: boolean
+    maxSkips?: number
+  }
 }
 
 export const NewEntryEditor = forwardRef<NewEntryEditorHandle, NewEntryEditorProps>(
@@ -46,6 +60,11 @@ export const NewEntryEditor = forwardRef<NewEntryEditorHandle, NewEntryEditorPro
     writingQuestions = [],
     questionsLoading = false,
     fontFamily = getEditorFont(),
+    weather,
+    weatherLoading,
+    weatherError,
+    onRefreshQuestions,
+    canRefreshQuestions,
   }, ref) {
     const isMobile = useMediaQuery('(max-width: 768px)')
     const [title, setTitle] = useState(initialTitle)
@@ -56,6 +75,15 @@ export const NewEntryEditor = forwardRef<NewEntryEditorHandle, NewEntryEditorPro
     const autoSaveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
     const lastSavedRef = useRef<string>('') // Track last saved content to avoid unnecessary saves
     const textareaRef = useRef<HTMLTextAreaElement>(null)
+    const [refreshingQuestions, setRefreshingQuestions] = useState(false)
+    const [rateLimitInfo, setRateLimitInfo] = useState<{
+      allowed: boolean
+      remaining: number
+      resetTime: number | null
+      isUnlimited?: boolean
+      maxSkips?: number
+    } | null>(null)
+    const [completedQuestions, setCompletedQuestions] = useState<Set<string>>(new Set())
 
     // Listen for font changes in localStorage
     useEffect(() => {
@@ -176,12 +204,73 @@ export const NewEntryEditor = forwardRef<NewEntryEditorHandle, NewEntryEditorPro
       onContentChange?.(wordCount)
     }
 
+    const toggleQuestionCompleted = (question: string) => {
+      setCompletedQuestions((prev) => {
+        const next = new Set(prev)
+        if (next.has(question)) {
+          next.delete(question)
+        } else {
+          next.add(question)
+        }
+        return next
+      })
+    }
+
+    // Sync AI questions cooldown info for mobile (similar to RightSidebar)
+    useEffect(() => {
+      if (!isMobile || !canRefreshQuestions) return
+
+      const update = () => {
+        const info = canRefreshQuestions()
+        setRateLimitInfo(info)
+      }
+
+      update()
+      const interval = setInterval(update, 1000)
+      return () => clearInterval(interval)
+    }, [isMobile, canRefreshQuestions])
+
+    const getTimeUntilReset = (resetTime: number | null): string => {
+      if (!resetTime) return ''
+      const now = Date.now()
+      const diff = resetTime - now
+      if (diff <= 0) return ''
+
+      const totalSeconds = Math.floor(diff / 1000)
+      const hours = Math.floor(totalSeconds / 3600)
+      const minutes = Math.floor((totalSeconds % 3600) / 60)
+      const seconds = totalSeconds % 60
+
+      if (hours > 0) {
+        return `${hours}ч ${minutes}м ${seconds}с`
+      } else if (minutes > 0) {
+        return `${minutes}м ${seconds}с`
+      }
+      return `${seconds}с`
+    }
+
+    const handleRefreshQuestionsClick = async () => {
+      if (!onRefreshQuestions || refreshingQuestions || (rateLimitInfo && !rateLimitInfo.allowed)) {
+        return
+      }
+      setRefreshingQuestions(true)
+      try {
+        await onRefreshQuestions()
+        // cooldown info обновится через canRefreshQuestions в useEffect
+      } catch (error) {
+        console.error('Failed to refresh questions (mobile):', error)
+      } finally {
+        setRefreshingQuestions(false)
+      }
+    }
+
     return (
       <>
         <Box
           style={{
             padding: isMobile ? '20px 16px' : '40px',
-            paddingBottom: isMobile ? '80px' : '40px',
+            // 40px достаточно, так как плавающие кнопки снизу скрыты в режиме редактирования/создания
+            paddingBottom: '40px',
             maxWidth: '800px',
             margin: '0 auto',
             backgroundColor: 'var(--theme-bg)',
@@ -346,11 +435,12 @@ export const NewEntryEditor = forwardRef<NewEntryEditorHandle, NewEntryEditorPro
             }}
           />
 
-          {/* Mobile: Word count and date info */}
+          {/* Mobile: Word count, date, weather and AI questions (compact RightSidebar-like info) */}
           {isMobile && (
             <>
               <Divider style={{ borderColor: 'var(--theme-border)', marginTop: '24px' }} />
               <Stack gap="md" style={{ marginTop: '16px' }}>
+                {/* Word count */}
                 <Box>
                   <Text
                     size="xs"
@@ -378,6 +468,7 @@ export const NewEntryEditor = forwardRef<NewEntryEditorHandle, NewEntryEditorPro
 
                 <Divider style={{ borderColor: '#eee' }} />
 
+                {/* Date */}
                 <Box>
                   <Text
                     size="xs"
@@ -408,22 +499,35 @@ export const NewEntryEditor = forwardRef<NewEntryEditorHandle, NewEntryEditorPro
 
                 <Divider style={{ borderColor: '#eee' }} />
 
-                <Box>
-                  <Text
-                    size="xs"
-                    style={{
-                      color: 'var(--theme-text-secondary)',
-                      fontWeight: 600,
-                      marginBottom: '12px',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.5px',
-                    }}
-                  >
-                    Вопросы от ИИ
-                  </Text>
-                  {questionsLoading ? (
-                    <Group gap="xs" align="center">
-                      <Loader size="sm" color="var(--theme-primary)" />
+                {/* Weather */}
+                {(weatherLoading || weatherError || weather) && (
+                  <Box>
+                    <Text
+                      size="xs"
+                      style={{
+                        color: 'var(--theme-text-secondary)',
+                        fontWeight: 400,
+                        marginBottom: '8px',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.5px',
+                      }}
+                    >
+                      Погода
+                    </Text>
+                    {weatherLoading ? (
+                      <Group gap="xs" align="center">
+                        <Loader size="sm" color="var(--theme-primary)" />
+                        <Text
+                          size="sm"
+                          style={{
+                            color: 'var(--theme-text-secondary)',
+                            fontStyle: 'italic',
+                          }}
+                        >
+                          Загрузка...
+                        </Text>
+                      </Group>
+                    ) : weatherError ? (
                       <Text
                         size="sm"
                         style={{
@@ -431,29 +535,134 @@ export const NewEntryEditor = forwardRef<NewEntryEditorHandle, NewEntryEditorPro
                           fontStyle: 'italic',
                         }}
                       >
-                        Загрузка вопросов...
+                        {weatherError}
                       </Text>
-                    </Group>
-                  ) : (
-                    <Stack gap="sm">
-                      {writingQuestions.map((question, index) => (
+                    ) : weather ? (
+                      <Group gap="xs" align="center">
+                        {weather.icon && (
+                          <img
+                            src={getWeatherIconUrl(weather.icon)}
+                            alt={weather.description}
+                            style={{ width: '28px', height: '28px' }}
+                          />
+                        )}
+                        <Group gap={4} align="center">
+                          <IconTemperature
+                            size={16}
+                            style={{ color: 'var(--theme-text-secondary)' }}
+                          />
+                          <Text
+                            size="lg"
+                            style={{
+                              color: 'var(--theme-text)',
+                              fontWeight: 400,
+                              fontFamily: 'monospace',
+                            }}
+                          >
+                            {weather.temperature}°
+                          </Text>
+                        </Group>
+                      </Group>
+                    ) : null}
+                  </Box>
+                )}
+
+                {/* AI questions */}
+                {writingQuestions.length > 0 && (
+                  <Box>
+                    <Group justify="space-between" align="center" style={{ marginBottom: '8px' }}>
+                      <Text
+                        size="xs"
+                        style={{
+                          color: 'var(--theme-text-secondary)',
+                          fontWeight: 600,
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.5px',
+                        }}
+                      >
+                        Вопросы от ИИ
+                      </Text>
+                      {canRefreshQuestions && rateLimitInfo && (
                         <Text
-                          key={index}
-                          size="sm"
+                          size="xs"
                           style={{
-                            color: 'var(--theme-text)',
+                            color: 'var(--theme-text-secondary)',
                             fontWeight: 400,
-                            lineHeight: 1.6,
-                            opacity: 0,
-                            animation: `fadeInUp 0.6s ease-out ${index * 0.15 + 0.2}s forwards`,
                           }}
                         >
-                          {question}
+                          {rateLimitInfo.remaining > 0 ? (
+                            `Осталось: ${rateLimitInfo.remaining}/${rateLimitInfo.maxSkips || 1}`
+                          ) : rateLimitInfo.resetTime ? (
+                            `Через: ${getTimeUntilReset(rateLimitInfo.resetTime)}`
+                          ) : null}
                         </Text>
-                      ))}
-                    </Stack>
-                  )}
-                </Box>
+                      )}
+                    </Group>
+                    {questionsLoading || refreshingQuestions ? (
+                      <Group gap="xs" align="center">
+                        <Loader size="sm" color="var(--theme-primary)" />
+                        <Text
+                          size="sm"
+                          style={{
+                            color: 'var(--theme-text-secondary)',
+                            fontStyle: 'italic',
+                          }}
+                        >
+                          {refreshingQuestions ? 'Загрузка новых вопросов...' : 'Загрузка вопросов...'}
+                        </Text>
+                      </Group>
+                    ) : (
+                      <Stack gap="sm">
+                        {writingQuestions.map((question, index) => (
+                          <Box
+                            key={index}
+                            onClick={() => toggleQuestionCompleted(question)}
+                            style={{ cursor: 'pointer' }}
+                          >
+                            <Text
+                              size="sm"
+                              style={{
+                                color: 'var(--theme-text)',
+                                fontWeight: 400,
+                                lineHeight: 1.6,
+                                opacity: completedQuestions.has(question) ? 0.5 : 1,
+                                animation: `fadeInUp 0.6s ease-out ${index * 0.15 + 0.2}s forwards`,
+                                textDecoration: completedQuestions.has(question)
+                                  ? 'line-through'
+                                  : 'none',
+                                transition: 'opacity 0.2s ease, text-decoration-color 0.2s ease',
+                              }}
+                            >
+                              {question}
+                            </Text>
+                          </Box>
+                        ))}
+                        {onRefreshQuestions && (
+                          <Button
+                            variant="subtle"
+                            size="xs"
+                            leftSection={<IconRefresh size={14} />}
+                            onClick={handleRefreshQuestionsClick}
+                            disabled={
+                              refreshingQuestions ||
+                              (rateLimitInfo !== null && rateLimitInfo.allowed === false)
+                            }
+                            style={{
+                              marginTop: '8px',
+                              alignSelf: 'flex-end',
+                              color:
+                                rateLimitInfo?.allowed ?? true
+                                  ? 'var(--theme-primary)'
+                                  : 'var(--theme-text-secondary)',
+                            }}
+                          >
+                            Другие вопросы
+                          </Button>
+                        )}
+                      </Stack>
+                    )}
+                  </Box>
+                )}
               </Stack>
             </>
           )}
