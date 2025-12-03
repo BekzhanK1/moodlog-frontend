@@ -159,7 +159,8 @@ function LandingPage() {
           borderBottom: '1px solid #eee',
           backgroundColor: 'rgba(255, 255, 255, 0.92)',
           backdropFilter: 'blur(8px)',
-          padding: isMobile ? '10px 12px' : '12px 20px',
+          // немного больше боковых отступов на мобиле, чтобы кнопка "Войти" не прилипала к правому краю
+          padding: isMobile ? '10px 16px' : '12px 20px',
         }}
       >
         <Group justify="space-between" align="center" wrap="nowrap">
@@ -192,6 +193,8 @@ function LandingPage() {
               letterSpacing: '0.5px',
               fontSize: isMobile ? '13px' : '14px',
               padding: isMobile ? '8px 18px' : '10px 22px',
+              // избегаем переноса и обрезания текста кнопки на очень узких экранах
+              whiteSpace: 'nowrap',
             }}
             className="button-smooth"
             onMouseEnter={(e) => {
