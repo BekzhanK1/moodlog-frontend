@@ -11,6 +11,7 @@ import {
   ScrollArea,
   Drawer,
   Loader,
+  Kbd,
 } from '@mantine/core'
 import { useMediaQuery } from '@mantine/hooks'
 import {
@@ -60,6 +61,7 @@ export function Sidebar({
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [isSearchFocused, setIsSearchFocused] = useState(false)
   const [searchValue, setSearchValue] = useState(searchQuery)
+  const [shortcutHint, setShortcutHint] = useState<string>('')
   const scrollAreaRef = useRef<HTMLDivElement>(null)
   const observerRef = useRef<IntersectionObserver | null>(null)
   const loadMoreRef = useRef<HTMLDivElement>(null)
@@ -71,9 +73,24 @@ export function Sidebar({
     setSearchValue(searchQuery)
   }, [searchQuery])
 
+  // Determine platform-specific shortcut hint (⌘K / Ctrl + K), hide on mobile
+  useEffect(() => {
+    if (isMobile) {
+      setShortcutHint('')
+      return
+    }
+
+    if (typeof window !== 'undefined') {
+      const platform = window.navigator.platform || ''
+      const isMac = /Mac|iPhone|iPad|iPod/i.test(platform)
+      setShortcutHint(isMac ? '⌘K' : 'Ctrl + K')
+    }
+  }, [isMobile])
+
   // Keyboard shortcut for search (Cmd/Ctrl+K)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (isMobile) return
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault()
         searchInputRef.current?.focus()
@@ -82,7 +99,7 @@ export function Sidebar({
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [])
+  }, [isMobile])
 
   // On mobile, close sidebar when entry is clicked
   const handleEntryClick = (entry: EntryResponse) => {
@@ -261,7 +278,7 @@ export function Sidebar({
       <Box style={{ padding: '16px', borderBottom: '1px solid var(--theme-border)' }}>
         <TextInput
           ref={searchInputRef}
-          placeholder="Поиск или #тег (⌘K)"
+          placeholder="Поиск или #тег"
           value={searchValue}
           onChange={(e) => {
               const value = e.currentTarget.value
@@ -301,8 +318,23 @@ export function Sidebar({
                     }
                   }}
                 />
+              ) : shortcutHint ? (
+                <Kbd
+                  style={{
+                    backgroundColor: 'var(--theme-hover)',
+                    borderColor: 'var(--theme-border)',
+                    color: 'var(--theme-text-secondary)',
+                    fontSize: '11px',
+                    fontWeight: 400,
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {shortcutHint.replace(' + ', '+')}
+                </Kbd>
               ) : null
             }
+            // даём чуть больше места под подсказку, чтобы текст не переносился
+            rightSectionWidth={searchValue || !shortcutHint ? undefined : 72}
             leftSection={
               <IconSearch 
                 size={isMobile ? 18 : 16} 

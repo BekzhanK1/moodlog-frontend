@@ -5,8 +5,8 @@ import { Link } from 'react-router-dom'
 
 interface AuthLayoutProps {
   children: ReactNode
-  title: string
-  subtitle?: string
+  title: ReactNode
+  subtitle?: ReactNode
 }
 
 export function AuthLayout({ children, title, subtitle }: AuthLayoutProps) {

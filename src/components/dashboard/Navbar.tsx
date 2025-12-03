@@ -172,11 +172,12 @@ export function Navbar({ userPicture, onMenuClick, onImportComplete, onAudioReco
                 boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
               },
               label: {
-                fontSize: '11px',
+                // единый стиль заголовков секций
+                fontSize: '13px',
                 color: 'var(--theme-text-secondary)',
-                fontWeight: 600,
+                fontWeight: 500,
                 textTransform: 'uppercase',
-                letterSpacing: '0.5px',
+                letterSpacing: '0.08em',
                 padding: '8px 12px',
                 backgroundColor: 'var(--theme-bg)',
               },
@@ -185,6 +186,7 @@ export function Navbar({ userPicture, onMenuClick, onImportComplete, onAudioReco
                 margin: '4px 0',
               },
               item: {
+                // единый стиль пунктов меню
                 fontSize: '14px',
                 color: 'var(--theme-text)',
                 padding: '10px 12px',
@@ -248,15 +250,41 @@ export function Navbar({ userPicture, onMenuClick, onImportComplete, onAudioReco
                 onClick={() => setSubscriptionMenuOpened(true)}
               >
                 <Group justify="space-between" gap="xs">
-                  <Text>Управление подпиской</Text>
+                  <Text
+                    style={{
+                      fontSize: '14px',
+                      color: 'var(--theme-text)',
+                      fontWeight: 400,
+                    }}
+                  >
+                    Управление подпиской
+                  </Text>
                   {subscription?.plan === 'free' && (
-                    <Badge size="xs" color="gray">Free</Badge>
+                    <Badge
+                      size="xs"
+                      color="gray"
+                      style={{ fontSize: '11px', fontWeight: 400 }}
+                    >
+                      Free
+                    </Badge>
                   )}
                   {subscription?.plan === 'trial' && (
-                    <Badge size="xs" color="blue">Trial</Badge>
+                    <Badge
+                      size="xs"
+                      color="blue"
+                      style={{ fontSize: '11px', fontWeight: 400 }}
+                    >
+                      Trial
+                    </Badge>
                   )}
                   {(subscription?.plan === 'pro_month' || subscription?.plan === 'pro_year') && (
-                    <Badge size="xs" color="yellow">Pro</Badge>
+                    <Badge
+                      size="xs"
+                      color="yellow"
+                      style={{ fontSize: '11px', fontWeight: 400 }}
+                    >
+                      Pro
+                    </Badge>
                   )}
                 </Group>
               </Menu.Item>
@@ -302,12 +330,20 @@ export function Navbar({ userPicture, onMenuClick, onImportComplete, onAudioReco
                 onClick={() => setTelegramImportOpened(true)}
               >
                 <Group gap={6} align="center">
-                  <Text>Импорт из Telegram</Text>
                   <Text
-                    size="xs"
                     style={{
+                      fontSize: '14px',
+                      color: 'var(--theme-text)',
+                      fontWeight: 400,
+                    }}
+                  >
+                    Импорт из Telegram
+                  </Text>
+                  <Text
+                    style={{
+                      fontSize: '11px',
                       color: 'var(--theme-text-secondary)',
-                      fontWeight: 600,
+                      fontWeight: 500,
                       backgroundColor: 'var(--theme-hover)',
                       padding: '2px 6px',
                       borderRadius: '4px',

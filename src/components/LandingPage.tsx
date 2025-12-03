@@ -171,7 +171,7 @@ function LandingPage() {
               style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}
             >
               <Image
-                src="/moodlog-logo-black.png"
+                src={isMobile ? '/favicon.svg' : '/moodlog-logo-black.png'}
                 alt="MoodLog"
                 h={28}
                 mah={28}
@@ -360,9 +360,11 @@ function LandingPage() {
                     ...styles,
                     color: '#111',
                     maxWidth: isMobile ? '100%' : '760px',
-                    fontWeight: 500,
-                    letterSpacing: '0.4px',
-                    fontSize: isMobile ? '28px' : isTablet ? '34px' : '40px',
+                    // Заголовок: Montserrat Bold, уменьшенный межбуквенный интервал и крупный размер на десктопе
+                    fontFamily: `'Montserrat', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif`,
+                    fontWeight: 700,
+                    letterSpacing: '-0.01em',
+                    fontSize: isMobile ? '28px' : isTablet ? '40px' : '67px',
                     lineHeight: 1.2,
                     padding: isMobile ? '0 8px' : '0',
                     textAlign: 'center',

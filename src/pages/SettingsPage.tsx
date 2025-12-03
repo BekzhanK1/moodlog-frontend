@@ -1,6 +1,19 @@
 import { Box, Container, Title, Stack, Group, Button, Text, Card, Divider, Select, Badge } from '@mantine/core'
 import { useMediaQuery } from '@mantine/hooks'
-import { IconArrowLeft, IconCheck, IconPalette, IconTypography, IconSnowflake, IconEye, IconSettings, IconCrown } from '@tabler/icons-react'
+import {
+  IconArrowLeft,
+  IconCheck,
+  IconPalette,
+  IconTypography,
+  IconSnowflake,
+  IconEye,
+  IconSettings,
+  IconCrown,
+  IconCircleOff,
+  IconDroplets,
+  IconLeaf,
+  IconStars,
+} from '@tabler/icons-react'
 import { useNavigate } from 'react-router-dom'
 import { useTheme, ThemeName, themes } from '../contexts/ThemeContext'
 import { getEditorFont, setEditorFont, fontOptions, FontFamily, getFontFamily } from '../utils/fonts'
@@ -242,6 +255,8 @@ export function SettingsPage() {
                   const basicThemes: ThemeName[] = ['light', 'dark']
                   const isProTheme = !basicThemes.includes(option.value as ThemeName)
                   const isDisabled = isProTheme && !hasVisualThemesAccess
+                  const isLightTheme = option.value === 'light'
+                  const isDarkTheme = option.value === 'dark'
                   return (
                     <Group 
                       gap="sm" 
@@ -263,7 +278,14 @@ export function SettingsPage() {
                           width: '16px',
                           height: '16px',
                           borderRadius: '50%',
-                          backgroundColor: theme.colors.primary,
+                          // Для базовых тем используем понятные маркеры:
+                          // светлая тема — белый круг, тёмная — чёрный
+                          backgroundColor: isLightTheme
+                            ? '#ffffff'
+                            : isDarkTheme
+                              ? '#000000'
+                              : theme.colors.primary,
+                          border: isLightTheme ? '1px solid var(--theme-border)' : 'none',
                           flexShrink: 0,
                         }}
                       />
@@ -411,6 +433,27 @@ export function SettingsPage() {
                   value: option.value,
                   label: option.label,
                 }))}
+                renderOption={({ option, checked }) => (
+                  <Group
+                    gap="sm"
+                    style={{
+                      padding: '8px 4px',
+                    }}
+                  >
+                    <Text
+                      style={{
+                        flex: 1,
+                        color: 'var(--theme-text)',
+                        fontFamily: getFontFamily(option.value as FontFamily),
+                      }}
+                    >
+                      {option.label}
+                    </Text>
+                    {checked && (
+                      <IconCheck size={16} style={{ color: 'var(--theme-primary)' }} />
+                    )}
+                  </Group>
+                )}
                 styles={{
                   input: {
                     backgroundColor: 'var(--theme-bg)',
@@ -581,13 +624,32 @@ export function SettingsPage() {
                     >
                       <Box
                         style={{
-                          width: '16px',
-                          height: '16px',
-                          borderRadius: '50%',
-                          backgroundColor: option.value === 'none' ? 'var(--mantine-color-gray-5)' : 'var(--mantine-color-blue-5)',
+                          width: '20px',
+                          height: '20px',
+                          borderRadius: '6px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
                           flexShrink: 0,
+                          backgroundColor: 'color-mix(in srgb, var(--theme-primary) 8%, transparent)',
                         }}
-                      />
+                      >
+                        {option.value === 'none' && (
+                          <IconCircleOff size={16} style={{ color: 'var(--theme-text-secondary)' }} />
+                        )}
+                        {option.value === 'snow' && (
+                          <IconSnowflake size={16} style={{ color: 'var(--mantine-color-blue-5)' }} />
+                        )}
+                        {option.value === 'rain' && (
+                          <IconDroplets size={16} style={{ color: 'var(--mantine-color-blue-5)' }} />
+                        )}
+                        {option.value === 'leaves' && (
+                          <IconLeaf size={16} style={{ color: '#16a34a' }} />
+                        )}
+                        {option.value === 'stars' && (
+                          <IconStars size={16} style={{ color: '#eab308' }} />
+                        )}
+                      </Box>
                       <Text style={{ flex: 1, color: isDisabled ? 'var(--theme-text-secondary)' : 'var(--theme-text)' }}>
                         {option.label}
                       </Text>

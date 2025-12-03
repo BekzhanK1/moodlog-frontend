@@ -10,6 +10,7 @@ import {
   Divider,
   Box,
   Alert,
+  Image,
 } from '@mantine/core'
 import { IconAlertCircle } from '@tabler/icons-react'
 import { AuthLayout } from '../components/auth/AuthLayout'
@@ -66,7 +67,15 @@ export function LoginPage() {
 
   return (
     <AuthLayout
-      title="Вход"
+      title={
+        <Image
+          src="/moodlog-logo-black.png"
+          alt="MoodLog"
+          h={28}
+          fit="contain"
+          style={{ display: 'block' }}
+        />
+      }
       subtitle="Войдите в свой аккаунт, чтобы продолжить"
     >
       <Box
@@ -79,6 +88,8 @@ export function LoginPage() {
           backdropFilter: 'blur(10px)',
           borderRadius: 12,
           boxShadow: '0 18px 45px rgba(0, 0, 0, 0.08)',
+          // чуть больше отступ снизу, чтобы форма «дышала»
+          marginBottom: '32px',
         }}
       >
         <Stack gap="lg">

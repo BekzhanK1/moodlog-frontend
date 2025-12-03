@@ -1,6 +1,6 @@
 import { MantineProvider } from '@mantine/core'
 import { Notifications } from '@mantine/notifications'
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import LandingPage from './components/LandingPage'
 import { LoginPage } from './pages/LoginPage'
 import { RegisterPage } from './pages/RegisterPage'
@@ -17,8 +17,9 @@ import { AuthProvider } from './contexts/AuthContext'
 import { SubscriptionProvider } from './contexts/SubscriptionContext'
 import { ThemeProvider, useTheme } from './contexts/ThemeContext'
 import { WeatherEffectComponent } from './components/WeatherEffect'
-import { getWeatherEffect } from './utils/weatherEffects'
+import { getWeatherEffect, type WeatherEffect } from './utils/weatherEffects'
 import { useState, useEffect } from 'react'
+import { useAuth } from './contexts/AuthContext'
 
 function AppContent() {
   const { mantineTheme } = useTheme()
@@ -61,7 +62,8 @@ function AppContent() {
       <BrowserRouter>
         <AuthProvider>
           <SubscriptionProvider>
-            <WeatherEffectComponent effect={weatherEffect} />
+            {/* Визуальные эффекты (снег, дождь и т.д.) только для авторизованных пользователей */}
+            <WeatherEffectWrapper effect={weatherEffect} />
             <Routes>
             <Route path="/" element={<LandingPage />} />
             <Route path="/login" element={<LoginPage />} />
@@ -82,6 +84,27 @@ function AppContent() {
       </BrowserRouter>
     </MantineProvider>
   )
+}
+
+function WeatherEffectWrapper({ effect }: { effect: WeatherEffect }) {
+  const { isAuthenticated } = useAuth()
+  const location = useLocation()
+
+  const path = location.pathname
+  // Эффекты показываем только на «авторизованных» страницах
+  const isAuthRoute =
+    path.startsWith('/dashboard') ||
+    path.startsWith('/analytics') ||
+    path.startsWith('/settings') ||
+    path.startsWith('/profile') ||
+    path.startsWith('/tutorial') ||
+    path.startsWith('/admin')
+
+  if (!isAuthenticated || !isAuthRoute) {
+    return null
+  }
+
+  return <WeatherEffectComponent effect={effect} />
 }
 
 function App() {
