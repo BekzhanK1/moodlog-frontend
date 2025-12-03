@@ -171,7 +171,7 @@ function LandingPage() {
               style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}
             >
               <Image
-                src={isMobile ? '/favicon.svg' : '/moodlog-logo-black.png'}
+                src={isMobile ? '/logo.png' : '/moodlog-logo-black.png'}
                 alt="MoodLog"
                 h={28}
                 mah={28}
